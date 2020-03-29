@@ -23,7 +23,7 @@ public class DirTree {
     public static HashMap<String, HashMap> build_dir_tree(String startingDirs, String matchString,
             String excludeString) {
         HashMap<String, HashMap> tree = new HashMap<>();
-        for (String startingDir : startingDirs.split(" ")) {
+        for (String startingDir : startingDirs.split("\\|")) {
             tree.putAll(build_dir_tree_from_single_dir(startingDir, matchString, excludeString));
         }
         return tree;
