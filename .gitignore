@@ -1,1 +1,8 @@
-/target/
+*~
+*.swp
+*.swo
+*.pyc
+.idea
+autopath
+target
+.*
