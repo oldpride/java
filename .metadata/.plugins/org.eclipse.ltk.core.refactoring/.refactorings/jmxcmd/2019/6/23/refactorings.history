@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename package &apos;jmxcmd&apos; to &apos;com.tpsup.jmxcmd&apos;&#x0D;&#x0A;- Original project: &apos;jmxcmd&apos;&#x0D;&#x0A;- Original element: &apos;jmxcmd/src/main/java/jmxcmd&apos;&#x0D;&#x0A;- Renamed element: &apos;jmxcmd/src/main/java/com.tpsup.jmxcmd&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename package &apos;jmxcmd&apos;" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src\/main\/java&lt;jmxcmd" name="com.tpsup.jmxcmd" qualified="false" references="true" stamp="1559960363459" textual="false" version="1.0"/>
-</session>

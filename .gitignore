@@ -7,3 +7,7 @@ autopath
 target
 .*
 .metadata
+.settings
+.classpath
+.project
+bin
