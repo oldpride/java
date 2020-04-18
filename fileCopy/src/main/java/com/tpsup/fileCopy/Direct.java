@@ -25,68 +25,55 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import javax.swing.JTextArea;
 
-public class ClientPull implements Runnable {
-    private String remoteHost;
-    private int remotePort;
-    private String remotePath;
-    private String localPath;
-    private String match_string = "";
-    private String exclude_string = "";
-    private boolean dryrun = false;
-    private JTextArea log;
+public class Direct {
+    // this will be a static class: all methods are static
+    // to allow static methods to access class variables, the variables must be
+    // declared static
+    public static String root_dir_pattern = "^[a-zA-Z]:[/]*$|^[/]+$|^[/]+cygdrive[/]+[^/]+[/]*$";
 
-    public ClientPull(String remoteHost, String remotePort, String remotePath, String localPath,
-            JTextArea parentLog, HashMap<String, String> opt) {
-        this.remoteHost = remoteHost;
-        this.remotePort = Integer.parseInt(remotePort);
-        this.remotePath = remotePath;
-        this.localPath = localPath;
-        this.log = parentLog;
-        if (opt.containsKey("MatchString")) {
-            this.match_string = opt.get("MatchString");
+    public static void to_pull(MyConn myconn, String[] remote_paths, String local_dir, JTextArea log,
+            HashMap<String, Object> opt) {
+        String newline = "\n";
+        if (opt == null) {
+            opt = new HashMap<String, Object>();
         }
-        if (opt.containsKey("ExcludeString")) {
-            this.exclude_string = opt.get("ExcludeString");
-        }
-        if (opt.containsKey("timeout")) {
-            Integer.parseInt(opt.get("timeout"));
-        }
-        if (opt.containsKey("dryrun") && opt.get("dryrun").equals("1")) {
-            this.dryrun = true;
-        }
-    }
-
-    static private final String newline = "\n";
-
-    public void run() {
-        this.localPath.replaceAll("/+$", ""); // remove ending /
-        if (this.remotePath.matches("^/+$")) {
-            log.append("cannot handle remotePath = " + this.remotePath + newline);
-            return;
-        }
-        this.remotePath.replace("/+$", ""); // remote the trailing /
-        String back;
-        {
-            String[] array = this.remotePath.split("/+");
-            back = array[array.length - 1];
-        }
-        String target_path = localPath + "/" + back;
-        ArrayList<String> target_paths = new ArrayList<String>();
-        {
-// https://docs.oracle.com/javase/tutorial/essential/io/find.html
-            PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + target_path);
-            File[] list = (new File(localPath)).listFiles();
-            if (list != null) {
-                for (File f : list) {
-                    if (matcher.matches(f.toPath())) {
-                        target_paths.add(f.toString());
-                    }
-                }
+        boolean dryrun = (boolean) opt.getOrDefault("dryrun", false);
+        // replace \ with /, remove ending /
+        local_dir.replaceAll("\\", "/").replaceAll("/+$", "");
+        String local_dir_abs = (new File(local_dir)).getAbsolutePath();
+        ArrayList<String> local_paths = new ArrayList<String>();
+        for (String remote_path : remote_paths) {
+            // replace \ with /, remove ending /
+            remote_path.replaceAll("\\", "/").replaceAll("/+$", "");
+            if (remote_path.matches(Direct.root_dir_pattern)) {
+                String message = "ERROR: cannot copy from root dir: " + remote_path + newline;
+                myconn.writer.write(message);
+                log.append(message);
+                return;
+            }
+            // get the last component; we will treat it as a subdir right under local_dir
+            String back;
+            {
+                String[] array = remote_path.split("/+");
+                back = array[array.length - 1];
+            }
+            String local_path = local_dir + "/" + back;
+            // resolve dir/*csv to dir/a.csv, a/b.csv, ...
+            // example:
+            // $0 client host port /a/b/c/*.csv d
+            // we need to check whether we have d/*.csv
+            ArrayList<String> globs = FileGlob.get(local_path, null);
+            if (globs.isEmpty()) {
+                continue;
+            }
+            for (String path : globs) {
+                String local_abs = (new File(path)).getAbsolutePath().toString();
+                local_paths.add(local_abs);
             }
         }
-        long maxsize = -1;
-        HashMap<String, HashMap> client_tree = DirTree.build_dir_tree(target_paths, this.match_string,
-                this.exclude_string);
+        log.append("building local tree using abs_path: " + local_paths.toString() + newline);
+        long maxsize = (long) opt.getOrDefault("maxsize", -1);
+        HashMap<String, HashMap> client_tree = DirTree.build_dir_tree(local_paths, opt);
         log.append("client_tree = " + client_tree + newline);
         SocketChannel sc = null;
         Socket s = null;

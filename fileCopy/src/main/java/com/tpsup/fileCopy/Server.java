@@ -82,6 +82,7 @@ public class Server implements Runnable {
         String exclude_string;
         String match_string;
         int deep_check;
+        String uname;
         {
             String[] patternArray = { "<PATH>(.+)</PATH>", "<TREE>(.*)</TREE>", "<MAXSIZE>([-]?.+)</MAXSIZE>",
                     "<VERSION>(.+)</VERSION>", "<EXCLUDE>(.*)</EXCLUDE>", "<MATCH>(.*)</MATCH>",
@@ -103,6 +104,7 @@ public class Server implements Runnable {
             exclude_string = result.captures.get(4);
             match_string = result.captures.get(5);
             deep_check = Integer.parseInt(result.captures.get(6));
+            uname = result.captures.get(7);
         }
         log.append("server_path = " + server_path + newline);
         if (!version.matches("^" + Version.mainVersion + ".*")) {
