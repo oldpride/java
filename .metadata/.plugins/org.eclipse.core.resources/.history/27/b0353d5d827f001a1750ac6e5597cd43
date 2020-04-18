@@ -1,0 +1,11 @@
+package com.tpsup.fileCopy;
+
+import java.nio.channels.SocketChannel;
+
+public final class MyCoder {
+    public SocketChannel sc;
+    public int in_count = 0;    // total bytes received
+    public int  out_count = 0;   // total bytes sent
+    
+    public 
+}

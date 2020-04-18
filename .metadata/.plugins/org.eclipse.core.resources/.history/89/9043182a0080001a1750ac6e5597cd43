@@ -1,0 +1,112 @@
+package com.tpsup.fileCopy;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.swing.JTextArea;
+
+public class ExpectSocket {
+    private String newline = "\n";
+    private ByteBuffer buffer = null;
+    private SocketChannel sc = null;
+    private JTextArea log = null;
+    int ExpectTimeout = -1; // seconds
+
+    public ExpectSocket(MyConn myconn, JTextArea log, HashMap<String, String> opt) {
+        this.sc = myconn.sc;
+        this.buffer = ByteBuffer.allocate(4 * 1024);
+        this.log = log;
+        
+        if (opt.containsKey('ExpectTimeout'))
+            
+        }
+    }
+    
+    
+    // total_string = <VERSION>6.3</VERSION>
+    // <PATH>C:/Users/Public/Documents/CYGWIN/home/hantian/testdir
+    // C:/Users/Public/Documents/CYGWIN/home/hantian/testdir2</PATH><DEEP>0</DEEP><TREE>
+    // key=testdir2|back=testdir2|front=/home/axptsusu/|mode=0755|mtime=1546436740|size=128|test=dir|type=dir
+    // key=testdir2/e.txt|back=testdir2|front=/home/axptsusu/|mode=0644|mtime=1546436740|size=5|type=file
+    // </TREE><MAXSIZE>-l</MAXSIZE><EXCLUDE></EXCLUDE><MATCH></MATCH>
+    public ArrayList<ArrayList<String>> capture(String[] patterns, HashMap<String, String> opt) {
+        ArrayList<ArrayList<String>> captures = new ArrayList<ArrayList<String>>();
+        StringBuilder bld = new StringBuilder();
+
+        int receive_time_so_far = 0; // seconds
+        String error_message = null;
+        
+        ArrayList<Pattern> compiled_patterns = new ArrayList<Pattern>();
+        for (String pattern : patterns) {
+            Pattern compiled_pattern = Pattern.compile(pattern, Pattern.DOTALL);
+            compiled_patterns.add(compiled_pattern);
+        }
+        
+        try {
+            // turn off blocking (buffer) before reading out data
+            sc.configureBlocking(false);
+            
+            while (true) {                
+                Thread.sleep(1000); // 1000 milliseconds is one second.
+                receive_time_so_far++;
+                if (receive_time_so_far > receive_timeout) {
+                    error_message = "ExpectSocket timed out after " + receive_timeout
+                            + " seconds. very likely wrong protocol. expecting "
+                            + Version.expected_protocol + ".*";
+                    break;
+                }
+                buffer.clear();
+                int size = sc.read(buffer);
+                if (size == -1) {
+                    error_message = "counterparty closed connection";
+                    break;
+                } else if (size == 0) {
+                    continue; // no new data
+                } else {
+                    log.append("received " + size + " bytes" + newline);
+                }
+                buffer.flip();
+                // https://docs.oracle.com/javase/7/docs/api/java/nio/Buffer.html#flip()
+                // Flips this buffer. The limit is set to the current position and then the
+                // position is set to zero.
+                // flips the buff after write to the buffer and before read from the buffer
+                int n = buffer.limit();
+                log.append("found " + size + " bytes in buffer" + newline);
+                bld.append(StandardCharsets.UTF_8.decode(buffer).toString());
+                log.append("total_string = " + bld.toString() + newline);
+                // https://www.geeksforgeeks.org/array-vs-arraylist-in-java/
+                // ArrayList<String> captures = new ArrayList<String>();
+                Boolean all_matched = true;
+                int i = 0;
+                for (String patternString : patternArray) {
+                    // https://stackoverflow.com/questions/17969436/java-regex-capturing-groups
+                    Pattern pattern = Pattern.compile(patternString, Pattern.DOTALL);
+                    Matcher matcher = pattern.matcher(bld.toString());
+                    log.append("testing " + patternString + newline);
+                    if (matcher.find()) {
+                        captures.add(matcher.group(1));
+                        log.append("matched" + newline);
+                    } else {
+                        all_matched = false;
+                    }
+                }
+                if (all_matched) {
+                    log.append("we got all expected data, returning " + newline);
+                    return captures;
+                } else {
+                    log.append("we haven't got all expected data, entering next round" + newline);
+                    continue;
+                }
+            }
+        } catch (Exception e) {
+            log.append(e.getStackTrace().toString());
+            return null;
+        }
+        return null;
+    }
+}
