@@ -14,7 +14,7 @@ import com.google.gson.GsonBuilder;
 public class DirTree {
     public static HashMap<String, HashMap> build_dir_tree(ArrayList<String> paths,
             HashMap<String, Object> opt) {
-        boolean verbose = opt != null && opt.containsKey("verbose") && (boolean) opt.get("verbose");
+        boolean verbose = opt != null && opt.containsKey("verbose") && (Boolean) opt.get("verbose");
         Gson gson = null;
         if (verbose) {
             gson = new GsonBuilder().create();
@@ -40,8 +40,8 @@ public class DirTree {
         }
         // note: Java doesn't have chdir() or pwd concept as it is not multi-threading
         // safe
-        HashMap<String, HashMap> tree = new HashMap<>();
-        HashMap<String, HashMap> other = new HashMap<>();
+        HashMap<String, HashMap> tree = new HashMap<String, HashMap>();
+        HashMap<String, HashMap> other = new HashMap<String, HashMap>();
         for (String path : paths) {
             ArrayList<String> globs = null;
             try {
