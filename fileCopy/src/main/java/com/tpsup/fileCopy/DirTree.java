@@ -6,19 +6,18 @@ import java.nio.file.FileVisitOption;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class DirTree {
+	
+
     public static HashMap<String, HashMap> build_dir_tree(ArrayList<String> paths,
             HashMap<String, Object> opt) {
         boolean verbose = opt != null && opt.containsKey("verbose") && (Boolean) opt.get("verbose");
-        Gson gson = null;
-        if (verbose) {
-            gson = new GsonBuilder().create();
-        }
+        MyLogger.verbose = verbose;
+        
         ArrayList<Pattern> matches = null;
         if (opt != null && opt.containsKey("matches")) {
             matches = new ArrayList<Pattern>();
@@ -50,17 +49,20 @@ public class DirTree {
                 e1.printStackTrace();
                 continue;
             }
-            System.out.println("resolved globs if any: " + path + " => " + gson.toJson(globs));
+            //System.out.println("resolved globs if any: " + path + " => " + gson.toJson(globs));
+            MyLogger.append("resolved globs if any: " + path + " => " + MyGson.gson.toJson(globs));
             for (String p : globs) {
                 File f = new File(p);
                 if (!f.exists()) {
-                    System.err.println(p + " not found");
+                    //System.err.println(p + " not found");
+                    MyLogger.append(p + " not found");
                     continue;
                 }
                 String abs_path = f.getAbsolutePath().toString();
                 abs_path = abs_path.replace("\\", "/");
                 if (abs_path.matches(root_dir_pattern)) {
-                    System.err.println("we cannot handle root dir: " + p + " = " + abs_path);
+                    //System.err.println("we cannot handle root dir: " + p + " = " + abs_path);
+                    MyLogger.append(MyLogger.ERROR, "we cannot handle root dir: " + p + " = " + abs_path);
                     System.exit(1); // exit here, not just skip, as mishandle this could remove files.
                 }
                 // find front and back
@@ -72,7 +74,8 @@ public class DirTree {
                     front = matcher.group(1);
                     back = matcher.group(2);
                 } else {
-                    System.err.println("unexpected path format, no '/' : " + abs_path);
+                    //System.err.println("unexpected path format, no '/' : " + abs_path);
+                    MyLogger.append(MyLogger.ERROR, "unexpected path format, no '/' : " + abs_path);
                     System.exit(1); // exit here, not just skip, as mishandle this could remove files.
                 }
                 // https://stackoverflow.com/questions/41117898/how-to-create-empty-enumset
@@ -102,6 +105,7 @@ public class DirTree {
         paths.add("C:/users/william/git*/kdb");
         paths.add("C:/users/william/github/tpsup/profile");
         HashMap<String, HashMap> tree = build_dir_tree(paths, opt);
-        System.out.println((new GsonBuilder().setPrettyPrinting().create()).toJson(tree));
+        //System.out.println((new GsonBuilder().setPrettyPrinting().create()).toJson(tree));
+        MyLogger.append(MyGson.gson.toJson(tree));
     }
 }
