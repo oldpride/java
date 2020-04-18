@@ -25,9 +25,9 @@ import com.google.gson.GsonBuilder;
 public class FileGlob {
     public static ArrayList<String> get(String pattern, HashMap<String, Object> opt) throws IOException {
         ArrayList<String> results = new ArrayList<String>();
-        boolean verbose = opt != null && (boolean) opt.getOrDefault("verbose", false);
+        boolean verbose = opt != null && (Boolean) opt.getOrDefault("verbose", false);
         // default to check file existence
-        boolean checkExistence = opt == null || (boolean) opt.getOrDefault("checkExistence", true);
+        boolean checkExistence = opt == null || (Boolean) opt.getOrDefault("checkExistence", true);
         // return the string if it is not pattern.
         {
             if (!pattern.contains("*") && !pattern.contains("?")) {
