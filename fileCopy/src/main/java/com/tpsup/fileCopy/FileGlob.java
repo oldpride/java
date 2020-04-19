@@ -23,7 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class FileGlob {
-	public static ArrayList<String> get(String pattern, HashMap<String, Object> opt) throws IOException {
+	public static ArrayList<String> get(String pattern, HashMap<String, Object> opt) {
 		ArrayList<String> results = new ArrayList<String>();
 		boolean verbose = opt != null && (Boolean) opt.getOrDefault("verbose", false);
 		// default to check file existence
@@ -119,13 +119,7 @@ public class FileGlob {
 		}
 		return results;
 	}
-//        String NonGlobPart = "";
-//        int i = 0;
 
-//        // trim the last /
-//        NonGlobPart = NonGlobPart.substring(0, NonGlobPart.length() - 1);
-//        // https://docs.oracle.com/javase/tutorial/essential/io/find.html
-//        final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
 	public static void test() {
 		File[] list = (new File("C:/users/william/github/tpsup/ps1")).listFiles();
 		if (list != null) {
@@ -145,7 +139,7 @@ public class FileGlob {
 		System.exit(-1);
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		if (args.length != 1)
 			usage();
 		String pattern = args[0];

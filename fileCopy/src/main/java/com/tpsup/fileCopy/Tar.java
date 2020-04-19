@@ -86,9 +86,9 @@ public class Tar {
     public static void createTar(String outputString, String inputDirString) throws IOException {
         File outputFile = new File(outputString);
         File inputDirFile = new File(inputDirString);
-        List<File> files = new ArrayList<>(FileUtils.listFiles(new File(inputDirString),
+        List<File> files = new ArrayList<File>(FileUtils.listFiles(new File(inputDirString),
                 new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY));
-        ArrayList<String> inputList = new ArrayList<>();
+        ArrayList<String> inputList = new ArrayList<String>();
         for (File inputFile : files) {
             String absoluteFilePath = inputFile.toString().replace("\\", "/");
             inputList.add(absoluteFilePath);
@@ -103,7 +103,7 @@ public class Tar {
         try {
             // use absolute paths
             if (willdo == 0) {
-                List<File> files = new ArrayList<>(FileUtils.listFiles(new File("C:/Users/william/testdir"),
+                List<File> files = new ArrayList<File>(FileUtils.listFiles(new File("C:/Users/william/testdir"),
                         new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY));
                 ArrayList<String> StringList = new ArrayList<String>();
                 for (File file : files) {

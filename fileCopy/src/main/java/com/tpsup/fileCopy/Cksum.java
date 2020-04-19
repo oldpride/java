@@ -77,7 +77,7 @@ public class Cksum {
 
     public static void main(String[] args) throws Exception {
         String file = "C:/Users/Public/Documents/CYGWIN/home/hantian/testdir/btxtlink";
-        System.out.println(checksumMappedFile(file));
+        MyLogger.append(String.valueOf(checksumMappedFile(file)));
     }
 
     public static HashMap<String, String> get_cksums(String[] files, HashMap<String, HashMap> tree) {
@@ -89,7 +89,9 @@ public class Cksum {
                     cksum = String
                             .valueOf(Cksum.checksumMappedFile(tree.get(file).get("front") + "/" + file));
                 } catch (IOException e) {
-                    e.printStackTrace();
+                	MyLogger.append(MyLogger.ERROR, "cksum " + file + " failed");
+                	MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+                	continue;
                 }
                 cksum_by_file.put(file, cksum);
             }

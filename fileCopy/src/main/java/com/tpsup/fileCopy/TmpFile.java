@@ -2,6 +2,7 @@ package com.tpsup.fileCopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -11,14 +12,14 @@ import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
 
 public class TmpFile {
-    public static String createTmpFile(String baseDir, String prefix, HashMap<String, String> opt) {
+    public static String createTmpFile(String baseDir, String prefix, HashMap<String, Object> opt) {
         String username = System.getProperty("user.name");
         String yyyyMMdd = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
         String HHmmss = new SimpleDateFormat("HHmmss").format(Calendar.getInstance().getTime());
         if (baseDir == null) {
             baseDir = System.getProperty("user.home");
         }
-        baseDir = baseDir.replace("W", "/");
+        baseDir = baseDir.replace("\\", "/");
         String rootString = baseDir + "/tmp_" + username;
         File rootDir = new File(rootString);
         if (!rootDir.isDirectory()) {
@@ -34,10 +35,10 @@ public class TmpFile {
             if (list == null)
                 return tmpFileString;
             long now_ms = System.currentTimeMillis();
-            long max_ms = 1 * 24 * 60 * 60 * 1000; // only save for one day
+            long max_ms = 1 * 24 * 60 * 60 * 1000; // only save for 1 days
             for (File f : list) {
                 if (now_ms - f.lastModified() > max_ms) {
-                    System.out.println("removing " + f + "\n");
+                    MyLogger.append("removing " + f);
                     try {
                         if (f.isDirectory()) {
                             FileUtils.deleteDirectory(f);
@@ -45,13 +46,13 @@ public class TmpFile {
                             FileUtils.deleteQuietly(f);
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                    	MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
                     }
                 }
             }
         }
         if (opt.containsKey("chkSpace")) {
-            long requiredSpace = Integer.parseInt(opt.get("chkSpace"));
+            long requiredSpace = Integer.parseInt((String)opt.get("chkSpace"));
             if (requiredSpace > 0) {
                 FileStore store = null;
                 long available = 0;
@@ -59,21 +60,24 @@ public class TmpFile {
                     store = Files.getFileStore(Paths.get(tmpDirString));
                     available = store.getUsableSpace();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                	MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
                     return null;
                 }
                 if (available < requiredSpace) {
-                    System.err.println(tmpDirString + " only has " + available + " bytes < required "
-                            + requiredSpace + " bytes" + "\n");
+                	MyLogger.append(MyLogger.ERROR, tmpDirString + " only has " + available + " bytes < required "
+                            + requiredSpace + " bytes");
                     return null;
                 }
                 if (opt.containsKey("verbose")) {
-                    System.err.println(tmpDirString + " has " + available + " bytes >= required "
-                            + requiredSpace + " bytes" + "\n");
+                	MyLogger.append(MyLogger.ERROR, tmpDirString + " has " + available + " bytes >= required "
+                            + requiredSpace + " bytes");
                 }
             }
         }
-        tmpFileString = tmpDirString + "/" + prefix + "_" + HHmmss;
+        
+        // https://stackoverflow.com/questions/35842/how-can-a-java-program-get-its-own-process-id
+        String pid = (ManagementFactory.getRuntimeMXBean().getName().split("@"))[0];
+        tmpFileString = tmpDirString + "/" + prefix + "_" + HHmmss + pid;
         return tmpFileString;
     }
 }
