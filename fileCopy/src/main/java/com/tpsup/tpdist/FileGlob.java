@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 // C:/a/b/*/d should return
 //    C:/a/b/c1/d

@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

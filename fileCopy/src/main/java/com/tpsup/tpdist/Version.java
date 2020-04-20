@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 public final class Version {
     public final static String version = "7.0";

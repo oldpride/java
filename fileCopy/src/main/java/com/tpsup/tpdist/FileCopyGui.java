@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 import java.util.HashMap;
 import java.util.regex.Matcher;

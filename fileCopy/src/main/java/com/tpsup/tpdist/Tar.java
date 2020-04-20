@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

@@ -1,4 +1,4 @@
-package com.tpsup.fileCopy;
+package com.tpsup.tpdist;
 
 // we don't use log4j or anything similar to avoid a configuration file. this is for easy deploy.
 
