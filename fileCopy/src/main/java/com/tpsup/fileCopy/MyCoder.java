@@ -79,16 +79,16 @@ public final class MyCoder {
 		MyCoder encoder = new MyCoder("abc");
 		MyCoder decoder = new MyCoder("abc");
 		byte[] xored = encoder.xor(plain.getBytes());
-		MyLogger.append(MyGson.gson.toJson(xored));
+		MyLog.append(MyGson.gson.toJson(xored));
 		byte[] xored2 = decoder.xor(xored);
 		String plain2 = new String(xored2);
-		MyLogger.append(MyGson.gson.toJson(plain2));
+		MyLog.append(MyGson.gson.toJson(plain2));
 		
 		byte[] buffer = "hello2".getBytes();
-		MyLogger.append("original = " + MyGson.gson.toJson(buffer));
+		MyLog.append("original = " + MyGson.gson.toJson(buffer));
 		int size = encoder.xorInplace(buffer, 3);
-		MyLogger.append("size = " + size + ", encoded = " + MyGson.gson.toJson(buffer));
+		MyLog.append("size = " + size + ", encoded = " + MyGson.gson.toJson(buffer));
 		size = decoder.xorInplace(buffer, size);
-		MyLogger.append("size = " + size + ", decoded = " + MyGson.gson.toJson(buffer));
+		MyLog.append("size = " + size + ", decoded = " + MyGson.gson.toJson(buffer));
 	}
 }

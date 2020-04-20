@@ -4,17 +4,17 @@ package com.tpsup.fileCopy;
 
 import javax.swing.JTextArea;
 
-public final class MyLogger {
+public final class MyLog {
 	public static JTextArea jtextarea = null;
 	public static boolean verbose = false;
 
 	public static enum Level {
 		ERROR, INFO, VERBOSE
 	}
-	
+
 	// syntax sugar
-	final public static Level ERROR 	= Level.ERROR;
-	final public static Level INFO 	= Level.INFO;
+	final public static Level ERROR = Level.ERROR;
+	final public static Level INFO = Level.INFO;
 	final public static Level VERBOSE = Level.VERBOSE;
 
 	public static void append(Level level, String msg) {
@@ -32,7 +32,7 @@ public final class MyLogger {
 			}
 		}
 	}
-	
+
 	public static void append(String msg) {
 		append(Level.INFO, msg);
 	}

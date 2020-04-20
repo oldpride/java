@@ -38,7 +38,7 @@ public class TmpFile {
             long max_ms = 1 * 24 * 60 * 60 * 1000; // only save for 1 days
             for (File f : list) {
                 if (now_ms - f.lastModified() > max_ms) {
-                    MyLogger.append("removing " + f);
+                    MyLog.append("removing " + f);
                     try {
                         if (f.isDirectory()) {
                             FileUtils.deleteDirectory(f);
@@ -46,7 +46,7 @@ public class TmpFile {
                             FileUtils.deleteQuietly(f);
                         }
                     } catch (IOException e) {
-                    	MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+                    	MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
                     }
                 }
             }
@@ -60,16 +60,16 @@ public class TmpFile {
                     store = Files.getFileStore(Paths.get(tmpDirString));
                     available = store.getUsableSpace();
                 } catch (IOException e) {
-                	MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+                	MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
                     return null;
                 }
                 if (available < requiredSpace) {
-                	MyLogger.append(MyLogger.ERROR, tmpDirString + " only has " + available + " bytes < required "
+                	MyLog.append(MyLog.ERROR, tmpDirString + " only has " + available + " bytes < required "
                             + requiredSpace + " bytes");
                     return null;
                 }
                 if (opt.containsKey("verbose")) {
-                	MyLogger.append(MyLogger.ERROR, tmpDirString + " has " + available + " bytes >= required "
+                	MyLog.append(MyLog.ERROR, tmpDirString + " has " + available + " bytes >= required "
                             + requiredSpace + " bytes");
                 }
             }

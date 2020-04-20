@@ -68,7 +68,7 @@ public class ExpectSocket {
 
 				this_section_recv += myconn.last_in;
 
-				MyLogger.append("received " + myconn.last_in + " byte(s), total=" + myconn.total_in
+				MyLog.append("received " + myconn.last_in + " byte(s), total=" + myconn.total_in
 						+ ", this section so far " + this_section_recv + " byte(s)" + bld.toString());
 
 				// https://www.geeksforgeeks.org/array-vs-arraylist-in-java/
@@ -87,14 +87,14 @@ public class ExpectSocket {
 						captures.get(i).add(matcher.group(1));
 						captures.get(i).add(matcher.group(2));
 						captures.get(i).add(matcher.group(3));
-						MyLogger.append("matched pattern= " + patterns[i]);
+						MyLog.append("matched pattern= " + patterns[i]);
 						matched.add(i);
 					} else {
 						all_matched = false;
 					}
 				}
 				if (all_matched) {
-					MyLogger.append("received complete information from remote");
+					MyLog.append("received complete information from remote");
 					return captures;
 				}
 			}
@@ -103,8 +103,8 @@ public class ExpectSocket {
 		}
 
 		if (error_message != null) {
-			MyLogger.append(error_message);
-			MyLogger.append("matched so far");
+			MyLog.append(error_message);
+			MyLog.append("matched so far");
 			for (int i = 0; i < patterns.length; i++) {
 				String line = "   pattern=" + patterns[i] + "  ";
 				if (matched.contains(i)) {
@@ -112,16 +112,16 @@ public class ExpectSocket {
 				} else {
 					line += "not matched";
 				}
-				MyLogger.append(line);
+				MyLog.append(line);
 			}
 
 			String data = bld.toString();
 			int data_size = data.length();
 			int print_size = data_size;
 			if (print_size > 100) {
-				MyLogger.append("   Last words: " + data.substring(data_size - 100));
+				MyLog.append("   Last words: " + data.substring(data_size - 100));
 			} else {
-				MyLogger.append("   Last words: " + data);
+				MyLog.append("   Last words: " + data);
 			}
 		}
 

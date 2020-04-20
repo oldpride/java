@@ -39,7 +39,7 @@ public final class MyConn {
 		try {
 			this.outstream = socket.getOutputStream();
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 		}
 		
 		this.key = key;
@@ -61,7 +61,7 @@ public final class MyConn {
 			this.last_out = size;
 			this.total_out += size;
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 		}
 	}
 
@@ -79,7 +79,7 @@ public final class MyConn {
 		try {
 			size = this.socketChannel.read(this.buffer);
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 			return null;
 		}
 		
@@ -101,11 +101,11 @@ public final class MyConn {
         // flips the buff after write to the buffer and before read from the buffer
         int n = buffer.limit();
        
-        MyLogger.append("found " + size + " bytes in buffer");
+        MyLog.append("found " + size + " bytes in buffer");
         
         if (n != size) {
             // this should never happen. just in case
-        	MyLogger.append(MyLogger.ERROR, "n=" + n + " not equal to size=" + size);
+        	MyLog.append(MyLog.ERROR, "n=" + n + " not equal to size=" + size);
             return null;
         }
         
@@ -124,7 +124,7 @@ public final class MyConn {
 		try {
 			size = this.socket.getInputStream().read(buffer); // this is blocked IO
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 			return -1;
 		}
 		
@@ -139,7 +139,7 @@ public final class MyConn {
 		this.last_in = size;
 		this.total_in += size;
 		
-        MyLogger.append("received " + size + " bytes");
+        MyLog.append("received " + size + " bytes");
         
 		if (this.in_coder != null) {
 			this.in_coder.xorInplace(buffer, size);
@@ -150,7 +150,7 @@ public final class MyConn {
 		try {
 			this.outstream.flush();
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 		}
 	}
 
@@ -158,7 +158,7 @@ public final class MyConn {
 		try {
 			this.socketChannel.configureBlocking(arg0);
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 		}
 	}
 
@@ -168,7 +168,7 @@ public final class MyConn {
 			this.socketChannel.close();
 			this.socket.close();	
 		} catch (IOException e) {
-			MyLogger.append(MyLogger.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 		}	
 	}
 }

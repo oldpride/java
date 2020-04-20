@@ -61,7 +61,7 @@ public class FileGlob {
 			}
 		}
 		
-		MyLogger.append(MyLogger.VERBOSE, "is_glob = " + MyGson.gson.toJson(is_glob));
+		MyLog.append(MyLog.VERBOSE, "is_glob = " + MyGson.gson.toJson(is_glob));
 
 		ArrayList<ArrayList<String>> todo = new ArrayList<ArrayList<String>>();
 		ArrayList<String> seed = new ArrayList<String>();
@@ -72,7 +72,7 @@ public class FileGlob {
 				break;
 			}
 
-			MyLogger.append(MyLogger.VERBOSE, "todo = " + MyGson.gson.toJson(todo));
+			MyLog.append(MyLog.VERBOSE, "todo = " + MyGson.gson.toJson(todo));
 
 			ArrayList<String> doing = todo.remove(todo.size() - 1); // pop out the last todo item
 			int i = doing.size();

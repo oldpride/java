@@ -40,7 +40,7 @@ public class Tar {
             tarArchiveOutputStream.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
         }
         for (String inputString : inputStringList) {
-            System.out.println(inputString);
+            MyLog.append(inputString);
             String relativeFilePath;
             String absoluteFilePath;
             if (inputIsRelative) {
@@ -52,8 +52,8 @@ public class Tar {
                         .getPath().replace("\\", "/");
             }
             File inputFile = new File(absoluteFilePath);
-            System.out.println("absolute Path : " + absoluteFilePath);
-            System.out.println("relative Path : " + relativeFilePath);
+            MyLog.append("absolute Path : " + absoluteFilePath);
+            MyLog.append("relative Path : " + relativeFilePath);
             TarArchiveEntry tarEntry = null;
             // if (Files.isSymbolicLink(inputFile.toPath())) {
             if (Files.isSymbolicLink(Paths.get(absoluteFilePath))) {
@@ -66,7 +66,7 @@ public class Tar {
                 //
                 // C:\Users\hantian\testdir>mklink alink.txt a.txt
                 // You do not have sufficient privilege to perform this operation.
-                System.out.println("this is a sym link");
+                MyLog.append("this is a sym link");
                 // https://www.codota.com/code/java/methods/org.apache.commons.compress.archivers.tar.TarArchiveEntry/setLinkName
                 tarEntry = new TarArchiveEntry(inputFile.toString(), TarConstants.LF_SYMLINK);
                 tarEntry.setLinkName(relativeFilePath);
@@ -133,7 +133,7 @@ public class Tar {
                 String outputDir = "C:/Users/william/testuntar";
                 FileUtils.cleanDirectory(new File(outputDir));
                 List<File> outputFiles = unTar("C:/Users/william/junk.tar", outputDir);
-                System.out.println(outputFiles);
+                MyLog.append("outputFiles = " + MyGson.toJson(outputFiles));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -147,7 +147,7 @@ public class Tar {
             throws FileNotFoundException, IOException, ArchiveException {
         File inputFile = new File(inputString);
         File outputDir = new File(outputDirString);
-        System.out.println(String.format("Untaring %s to dir %s.", inputFile.getAbsolutePath(),
+        MyLog.append(String.format("Untaring %s to dir %s.", inputFile.getAbsolutePath(),
                 outputDir.getAbsolutePath()));
         final List<File> untaredFiles = new LinkedList<File>();
         final InputStream is = new FileInputStream(inputFile);
@@ -156,14 +156,14 @@ public class Tar {
         TarArchiveEntry entry = null;
         while ((entry = (TarArchiveEntry) debInputStream.getNextEntry()) != null) {
             final File outputFile = new File(outputDir, entry.getName());
-            System.out.println(entry.getName());
+            MyLog.append(entry.getName());
             if (entry.isSymbolicLink()) {
                 // in windows, by default, one cannot create symbolic link
                 // https://stackoverflow.com/questions/8228030/getting-filesystemexception-a-required-privilege-is-not-held-by-the-client-usi
                 // https://commons.apache.org/proper/commons-compress/apidocs/org/apache/commons/compress/archivers/tar/TarArchiveEntry.html
                 String target = entry.getLinkName();
                 String newLink = outputFile.getAbsolutePath();
-                System.out.println(String.format("Attempting to link %s to %s.", target, newLink));
+                MyLog.append(String.format("Attempting to link %s to %s.", target, newLink));
                 // if it should be a link, we try to create the link first.
                 // if we cannot create link, we copy
                 boolean success = true;
@@ -172,17 +172,17 @@ public class Tar {
                 } catch (Exception e) {
                     success = false;
                     e.printStackTrace();
-                    System.out.println("failed to create sym link " + newLink + ". will resort to copy");
+                    MyLog.append("failed to create sym link " + newLink + ". will resort to copy");
                 }
                 if (success) {
                     continue;
                 }
             }
             if (entry.isDirectory()) {
-                System.out.println(String.format("Attempting to write output directory %s.",
+                MyLog.append(String.format("Attempting to write output directory %s.",
                         outputFile.getAbsolutePath()));
                 if (!outputFile.exists()) {
-                    System.out.println(String.format("Attempting to create output directory %s.",
+                    MyLog.append(String.format("Attempting to create output directory %s.",
                             outputFile.getAbsolutePath()));
                     if (!outputFile.mkdirs()) {
                         throw new IllegalStateException(
