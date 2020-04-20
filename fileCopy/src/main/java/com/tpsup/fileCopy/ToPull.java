@@ -198,6 +198,8 @@ public class ToPull {
 				}
 			}
 		}
+		
+		ArrayList<String> diff_files = new ArrayList<String>();
 
 		if (!adds_string.isEmpty()) {
 			HashMap<String, String> action_by_file = new HashMap<String, String>();
@@ -211,7 +213,13 @@ public class ToPull {
 				if (pair_matcher.find()) {
 					action = pair_matcher.group(1);
 					file = pair_matcher.group(2);
+					
+					if (action_by_file.containsKey(file)) {
+						MyLog.append(MyLog.ERROR, "file appeared more than once on remote side");
+					}
 					action_by_file.put(file, action);
+					
+					if (action == "update") { diff_files.add(file); }
 				} else {
 					String error_message = "unexpected format " + a + ". expecting: action file";
 					MyLog.append(MyLog.ERROR, error_message);
@@ -305,6 +313,25 @@ public class ToPull {
 				} catch (IOException e) {
 					MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 				}				
+			}
+			
+			if (diff) {
+				for (String f: diff_files) {
+					String local_f = local_tree.get(f).get("front") + f;
+					String tmp_f = tmp_diff_dir + f;
+					MyLog.append("diff "+ local_f + " " + tmp_f);
+				}
+				
+				if ((Boolean)opt.getOrDefault("KeepTmpFile", false)) {
+					MyLog.append("tmp_diff_dir " + tmp_diff_dir + " is kept");
+				} else {
+					MyLog.append("removing tmp_diff_dir " + tmp_diff_dir);
+					try {
+						FileUtils.deleteDirectory(new File(tmp_diff_dir));
+					} catch (IOException e) {
+						MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+					}				
+				}
 			}
 		}
 		
