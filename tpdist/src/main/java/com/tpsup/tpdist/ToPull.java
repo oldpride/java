@@ -378,8 +378,8 @@ public class ToPull {
 				if (matcher.find()) {
 					String mode = matcher.group(1);
 					String filename = matcher.group(2);
-					String fullName = local_dir + "/" + filename;
-					MyLog.append("don't know how to set mode: " + mode + " " + filename);					
+					String fullname = local_dir + "/" + filename;
+					MyLog.append("don't know how to set mode: " + mode + " " + fullname);					
 				} else {
 					MyLog.append(MyLog.ERROR, "bad mode-file format at line : '" + l + "'");
 				}
