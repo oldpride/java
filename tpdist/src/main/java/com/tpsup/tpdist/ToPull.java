@@ -31,14 +31,14 @@ public class ToPull {
 		// replace \ with /, remove ending /
 		local_dir.replaceAll("\\", "/").replaceAll("/+$", "");
 
-		String local_dir_abs = (new File(local_dir)).getAbsolutePath();
+		//String local_dir_abs = (new File(local_dir)).getAbsolutePath();
 		ArrayList<String> local_paths = new ArrayList<String>();
 		for (String remote_path : remote_paths) {
 			// replace \ with /, remove ending /
 			remote_path.replaceAll("\\", "/").replaceAll("/+$", "");
 			if (remote_path.matches(ToPull.root_dir_pattern)) {
 				String message = "ERROR: cannot copy from root dir: " + remote_path;
-				myconn.writeString(message);
+				myconn.writeLine(message);
 				MyLog.append(message);
 				return;
 			}
@@ -69,21 +69,22 @@ public class ToPull {
 
 		// myconn.configureBlocking(true); we don't need to this because we
 		// use OutputStream to write, which is always blocking
-		String version_string = "<VERSION>" + Version.version + "</VERSION>\n";
-		MyLog.append("sending version: " + Version.version);
+		String version_string = "<VERSION>" + Version.version + "</VERSION>";
+		MyLog.append("sending version: " + version_string);
+		myconn.writeLine(version_string);
 
-		String uname_string = "<UNAME>Java|" + System.getProperty("os.name") + "</UNAME>\n";
-		MyLog.append("sending uname: Java|" + System.getProperty("os.name"));
-		myconn.writeString(uname_string);
+		String uname_string = "<UNAME>Java|" + Env.uname + "</UNAME>";
+		MyLog.append("sending uname: " + uname_string);
+		myconn.writeLine(uname_string);
 
-		String paths_string = "<PATH>" + String.join("|", remote_paths) + "</PATH>\n";
+		String paths_string = "<PATH>" + String.join("|", remote_paths) + "</PATH>";
 		MyLog.append("sending path: " + paths_string);
-		myconn.writeString(paths_string);
+		myconn.writeLine(paths_string);
 
 		char deep = (Character) opt.getOrDefault("Deep", "0");
-		String deep_string = "<DEEP>" + deep + "</DEEP>\n";
+		String deep_string = "<DEEP>" + deep + "</DEEP>";
 		MyLog.append("sending deep check flag: " + 0);
-		myconn.writeString(deep_string);
+		myconn.writeLine(deep_string);
 
 		String local_tree_string = null;
 		{
@@ -104,19 +105,19 @@ public class ToPull {
 			local_tree_string = bld.toString();
 		}
 		MyLog.append("sending local_tree: " + local_tree.size() + " items");
-		myconn.writeString(local_tree_string);
+		myconn.writeLine(local_tree_string);
 
-		String maxsize_string = "<MAXSIZE>" + maxsize + "</MAXSIZE>\n";
+		String maxsize_string = "<MAXSIZE>" + maxsize + "</MAXSIZE>";
 		MyLog.append("sending maxsize: " + maxsize);
-		myconn.writeString(maxsize_string);
+		myconn.writeLine(maxsize_string);
 
-		String excludes_string = "<EXCLUDE>" + (String) opt.getOrDefault("Excludes", "") + "</EXCLUDE>\n";
+		String excludes_string = "<EXCLUDE>" + (String) opt.getOrDefault("Excludes", "") + "</EXCLUDE>";
 		MyLog.append("sending excludes_string: " + excludes_string);
-		myconn.writeString(excludes_string);
+		myconn.writeLine(excludes_string);
 
-		String matches_string = "<MATCH>" + (String) opt.getOrDefault("Matches", "") + "</MATCH>\n";
+		String matches_string = "<MATCH>" + (String) opt.getOrDefault("Matches", "") + "</MATCH>";
 		MyLog.append("sending matches_string: " + matches_string);
-		myconn.writeString(matches_string);
+		myconn.writeLine(matches_string);
 		myconn.flush();
 
 		MyLog.append("waiting cksum requests from server ...");
@@ -148,7 +149,7 @@ public class ToPull {
 		// myconn.configureBlocking(true); not need this as OutputStream is always
 		// blocking
 		MyLog.append("sending cksums results: " + local_cksums_by_file.size() + " items");
-		myconn.writeString(cksums_results_string);
+		myconn.writeLine(cksums_results_string);
 		myconn.flush();
 
 		MyLog.append("waiting instructions from remote...");
@@ -156,7 +157,10 @@ public class ToPull {
 				"<SPACE>(\\d+)</SPACE>", "<ADDS>(.*)</ADDS>", "<WARNS>(.*)</WARNS>" };
 
 		captures.clear();
-		captures = expectSocket.capture(patternArray, opt);
+		captures = expectSocket.capture(patternArray2, opt);
+		// captures = expectSocket.capture((String[]){ "<DELETES>(.*)</DELETES>",
+		// "<MTIMES>(.*)</MTIMES>", "<MODES>(.*)</MODES>",
+		// "<SPACE>(\\d+)</SPACE>", "<ADDS>(.*)</ADDS>", "<WARNS>(.*)</WARNS>" }, opt);
 		if (captures == null) {
 			return;
 		}
@@ -198,7 +202,7 @@ public class ToPull {
 				}
 			}
 		}
-		
+
 		ArrayList<String> diff_files = new ArrayList<String>();
 
 		if (!adds_string.isEmpty()) {
@@ -213,17 +217,19 @@ public class ToPull {
 				if (pair_matcher.find()) {
 					action = pair_matcher.group(1);
 					file = pair_matcher.group(2);
-					
+
 					if (action_by_file.containsKey(file)) {
 						MyLog.append(MyLog.ERROR, "file appeared more than once on remote side");
 					}
 					action_by_file.put(file, action);
-					
-					if (action == "update") { diff_files.add(file); }
+
+					if (action == "update") {
+						diff_files.add(file);
+					}
 				} else {
 					String error_message = "unexpected format " + a + ". expecting: action file";
 					MyLog.append(MyLog.ERROR, error_message);
-					myconn.writeString(error_message);
+					myconn.writeLine(error_message);
 					myconn.flush();
 					return;
 				}
@@ -257,9 +263,9 @@ public class ToPull {
 			// myconn.configureBlocking(true); not need this as OutputStream is always
 			// blocking
 			if (diff) {
-				myconn.writeString("please send diff\n");
+				myconn.writeLine("please send diff");
 			} else {
-				myconn.writeString("please send data\n");
+				myconn.writeLine("please send data");
 			}
 			myconn.flush();
 
@@ -270,13 +276,13 @@ public class ToPull {
 					MyLog.append(MyLog.ERROR, "failed to create " + tmp_diff_dir);
 				}
 			}
-			
+
 			MyLog.append("waiting for data from remote, will write to $tmp_tar_file");
-			
+
 			int tar_size = 0;
 			try {
 				OutputStream outStream = new FileOutputStream(tmp_tar_file);
-				
+
 				byte buffer[] = new byte[1024 * 1024];
 				int size;
 				while ((size = myconn.streamReadBytes(buffer)) != -1) {
@@ -290,7 +296,7 @@ public class ToPull {
 			} catch (IOException e) {
 				MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 			}
-			
+
 			if (tar_size == 0) {
 				MyLog.append("no new file to add");
 			} else {
@@ -303,8 +309,8 @@ public class ToPull {
 				}
 				MyLog.append("extracted tar files from " + tmp_tar_file + " to " + local_dir);
 			}
-			
-			if ((Boolean)opt.getOrDefault("KeepTmpFile", false)) {
+
+			if ((Boolean) opt.getOrDefault("KeepTmpFile", false)) {
 				MyLog.append("tmp file " + tmp_tar_file + " is kept");
 			} else {
 				MyLog.append("removing tmp file " + tmp_tar_file);
@@ -312,17 +318,18 @@ public class ToPull {
 					FileUtils.forceDelete(new File(tmp_tar_file));
 				} catch (IOException e) {
 					MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
-				}				
+				}
 			}
-			
+
 			if (diff) {
-				for (String f: diff_files) {
+				for (String f : diff_files) {
 					String local_f = local_tree.get(f).get("front") + f;
 					String tmp_f = tmp_diff_dir + f;
-					MyLog.append("diff "+ local_f + " " + tmp_f);
+					MyLog.append("diff " + local_f + " " + tmp_f);
+					Diff.diff(local_f, tmp_f);
 				}
-				
-				if ((Boolean)opt.getOrDefault("KeepTmpFile", false)) {
+
+				if ((Boolean) opt.getOrDefault("KeepTmpFile", false)) {
 					MyLog.append("tmp_diff_dir " + tmp_diff_dir + " is kept");
 				} else {
 					MyLog.append("removing tmp_diff_dir " + tmp_diff_dir);
@@ -330,19 +337,18 @@ public class ToPull {
 						FileUtils.deleteDirectory(new File(tmp_diff_dir));
 					} catch (IOException e) {
 						MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
-					}				
+					}
 				}
 			}
 		}
-		
-		
+
 		if (!mtimes_string.isEmpty()) {
 			Pattern pattern = Pattern.compile("^(\\d+?)[ ](.+)$");
-			for (String line : mtimes_string.split("\n")) {
-				if (line.isEmpty()) {
+			for (String l : mtimes_string.split("\n")) {
+				if (l.isEmpty()) {
 					continue;
 				}
-				Matcher matcher = pattern.matcher(line);
+				Matcher matcher = pattern.matcher(l);
 				if (matcher.find()) {
 					String mtime = matcher.group(1);
 					String filename = matcher.group(2);
@@ -357,12 +363,28 @@ public class ToPull {
 						MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
 					}
 				} else {
-					MyLog.append(MyLog.ERROR, "bad format at line : '" + line + "'");
+					MyLog.append(MyLog.ERROR, "bad mtime-file format at line : '" + l + "'");
+				}
+			}
+		}
+
+		if (!modes_string.isEmpty()) {
+			Pattern pattern = Pattern.compile("^(\\S+?)\\s+(\\S.*)$");
+			for (String l : modes_string.split("\n")) {
+				if (l.isEmpty()) {
+					continue;
+				}
+				Matcher matcher = pattern.matcher(l);
+				if (matcher.find()) {
+					String mode = matcher.group(1);
+					String filename = matcher.group(2);
+					String fullName = local_dir + "/" + filename;
+					MyLog.append("don't know how to set mode: " + mode + " " + filename);					
+				} else {
+					MyLog.append(MyLog.ERROR, "bad mode-file format at line : '" + l + "'");
 				}
 			}
 		}
 		MyLog.append("all done\n\n");
 	}
-
-
 }

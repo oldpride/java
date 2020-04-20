@@ -65,8 +65,8 @@ public final class MyConn {
 		}
 	}
 
-	public void writeString(String data) {
-		byte[] bytearray = data.getBytes(StandardCharsets.UTF_8);
+	public void writeLine(String data) {
+		byte[] bytearray = (data + "\n").getBytes(StandardCharsets.UTF_8);
 		this.write(bytearray, bytearray.length);
 	}
 

@@ -58,7 +58,7 @@ public class ExpectSocket {
 					if (total_wait > ExpectTimeout) {
 						error_message = "timed out after " + ExpectTimeout
 								+ " seconds. very likely wrong protocol. expecting " + Version.expected_protocol + ".*";
-						myconn.writeString(error_message);
+						myconn.writeLine(error_message);
 						break;
 					}
 					Thread.sleep(1000); // 1000 milliseconds is one second.

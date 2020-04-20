@@ -10,8 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DirTree {
-	
-
     public static HashMap<String, HashMap> build_dir_tree(ArrayList<String> paths,
             HashMap<String, Object> opt) {
         boolean verbose = opt != null && opt.containsKey("verbose") && (Boolean) opt.get("verbose");
