@@ -6,7 +6,7 @@ import javax.swing.JTextArea;
 
 public final class MyLog {
 	public static JTextArea jtextarea = null;
-	public static boolean verbose = false;
+	public static boolean verbose = Env.verbose;
 
 	public static enum Level {
 		ERROR, INFO, VERBOSE
