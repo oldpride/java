@@ -41,9 +41,9 @@ public class Cmdline {
 
 	public static void usage(String message, Options options) {
 		if (message != null) {
-			MyLog.append(message);
+			MyLog.append(MyLog.ERROR, message);
 		}
-		
+
 		// printHelp() only prints to console. we need to collect string so that we can
 		// redirect it.
 		// https://stackoverflow.com/questions/44426626/how-do-i-get-help-string-from-commons-cli-instead-of-print
@@ -52,10 +52,10 @@ public class Cmdline {
 		PrintWriter printwriter = new PrintWriter(stringwriter);
 
 		formatter.printHelp(printwriter, 80, "tpdist", header, options, formatter.getLeftPadding(),
-				formatter.getDescPadding(), "test-footer", true);
+				formatter.getDescPadding(), footer, true);
 		printwriter.flush();
 
-		MyLog.append(stringwriter.toString());		
+		MyLog.append(stringwriter.toString());
 		System.exit(1);
 	}
 
@@ -88,12 +88,13 @@ public class Cmdline {
 				"named file contains file pattern (regex) not allowed to be pulled, one pattern per line");
 		options.addOption("enc", "encode", true, "encode key string (seed) ");
 		options.addOption("maxsize", true, "INT. maximium size to be transferred. default -1, ie, unlimited");
-		
+		options.addOption("maxtry", true, "INT. maximium tries of client when connect to server, default to 5");
+
 		return options;
 	}
 
 	public static void main(String[] args) {
-		MyLog.verbose = true;
+		// MyLog.verbose = true;
 		MyLog.append("args = " + MyGson.toJson(args));
 		Options options = setOptions();
 		ArrayList<String> optionList = new ArrayList<String>();
@@ -122,9 +123,9 @@ public class Cmdline {
 
 		HashMap<String, Object> opt = new HashMap<String, Object>();
 
-		//for (String o : optionList) {
+		// for (String o : optionList) {
 		for (Option option : cmd.getOptions()) {
-			//Option option = options.getOption(o);
+			// Option option = options.getOption(o);
 			String name = option.getLongOpt();
 			if (name == null) {
 				name = option.getOpt();
@@ -141,31 +142,55 @@ public class Cmdline {
 		}
 
 		Env.verbose = (Boolean) opt.getOrDefault("verbose", false);
-		
+
 		if (opt.containsKey("help")) {
 			usage(null, options);
 		}
 
-		ArrayList<String> argv = (ArrayList<String>) cmd.getArgList();
-		
+		ArrayList<String> argv = new ArrayList<String>(cmd.getArgList());
+
 		MyLog.append(MyLog.VERBOSE, "opt = " + MyGson.toJson(opt));
 		MyLog.append(MyLog.VERBOSE, "positional args " + MyGson.toJson(cmd.getArgs()));
-		
+
 		if (argv.size() == 0) {
 			usage("wrong number of args", options);
 		}
-		
-		String role = argv.remove(0);
-		
-		if (role == "server") {
 
-		} else if (role == "client") {
-		
-			
+		String role = argv.remove(0);
+
+		if (role.equals("server")) {
+
+		} else if (role.equals("client")) {
+			if (argv.size() < 2) {
+				usage("wrong number of args", options);
+			}
+			String host = argv.remove(0);
+			int port = new Integer(argv.remove(0));
+
+			if (opt.containsKey("reverse")) {
+				if (argv.size() != 0) {
+					usage("wrong number of args", options);
+				}
+				Client client = new Client(host, port, opt);
+				if (client.myconn == null) {
+					return;
+				}
+
+			} else {
+				if (argv.size() < 2) {
+					usage("wrong number of args", options);
+				}
+				Client client = new Client(host, port, opt);
+				if (client.myconn == null) {
+					return;
+				}
+				String local_dir = argv.remove(argv.size() - 1);
+				ArrayList<String> remote_paths = argv;
+				ToPull.pull(client.myconn, remote_paths, local_dir, opt);
+			}
 		} else {
 			usage("unknown role=" + role, options);
 		}
-		
 	}
 
 }

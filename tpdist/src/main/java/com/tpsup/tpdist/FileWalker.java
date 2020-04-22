@@ -28,7 +28,7 @@ public class FileWalker {
             kv.put("front", this.front);
             kv.put("back", this.back);
             this.tree.put(relative, kv);
-            System.out.format("Symbolic link: %s \n", f);
+            MyLog.append(MyLog.VERBOSE, String.format("Symbolic link: %s", f));
         } else if (Files.isRegularFile(f.toPath())) {
             kv.put("type", "file");
             kv.put("mode", "0644");
@@ -37,7 +37,7 @@ public class FileWalker {
             kv.put("front", this.front);
             kv.put("back", this.back);
             this.tree.put(relative, kv);
-            System.out.format("Regular file: %s \n", f);
+            MyLog.append(MyLog.VERBOSE, String.format("Regular file: %s", f));
         } else if (f.isDirectory()) {
             kv.put("type", "dir");
             kv.put("mode", "0755");
@@ -47,10 +47,10 @@ public class FileWalker {
             kv.put("front", this.front);
             kv.put("back", this.back);
             this.tree.put(relative, kv);
-            System.out.println("Dir: " + relative);
+            MyLog.append(MyLog.VERBOSE, "Dir: " + relative);
             level--;
             if (level < 0) {
-                System.out.println("Dir: " + relative + " too deep to parse\n");
+            	MyLog.append(MyLog.VERBOSE, "Dir: " + relative + " too deep to parse");
                 return;
             }
             String[] list = f.list();
@@ -60,7 +60,7 @@ public class FileWalker {
                 walk(path + "/" + shortname, relative + "/" + shortname, level);
             }
         } else {
-            System.out.format("Other: %s \n", f);
+        	MyLog.append(MyLog.VERBOSE, String.format("Other: %s \n", f));
         }
     }
 }

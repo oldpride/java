@@ -21,7 +21,8 @@ public class ToPull {
 	// declared static
 	public static String root_dir_pattern = "^[a-zA-Z]:[/]*$|^[/]+$|^[/]+cygdrive[/]+[^/]+[/]*$";
 
-	public static void to_pull(MyConn myconn, String[] remote_paths, String local_dir, HashMap<String, Object> opt) {
+	public static void pull(MyConn myconn, ArrayList<String> remote_paths, String local_dir,
+			HashMap<String, Object> opt) {
 		if (opt == null) {
 			opt = new HashMap<String, Object>();
 		}
@@ -29,13 +30,13 @@ public class ToPull {
 		boolean diff = (Boolean) opt.getOrDefault("diff", false);
 
 		// replace \ with /, remove ending /
-		local_dir.replaceAll("\\", "/").replaceAll("/+$", "");
+		local_dir.replace("\\", "/").replaceAll("/+$", "");
 
-		//String local_dir_abs = (new File(local_dir)).getAbsolutePath();
+		// String local_dir_abs = (new File(local_dir)).getAbsolutePath();
 		ArrayList<String> local_paths = new ArrayList<String>();
 		for (String remote_path : remote_paths) {
 			// replace \ with /, remove ending /
-			remote_path.replaceAll("\\", "/").replaceAll("/+$", "");
+			remote_path.replace("\\", "/").replaceAll("/+$", "");
 			if (remote_path.matches(ToPull.root_dir_pattern)) {
 				String message = "ERROR: cannot copy from root dir: " + remote_path;
 				myconn.writeLine(message);
@@ -58,12 +59,12 @@ public class ToPull {
 				continue;
 			}
 			for (String path : globs) {
-				String local_abs = (new File(path)).getAbsolutePath().toString();
+				String local_abs = (new File(path)).getAbsolutePath().toString().replace("\\", "/");
 				local_paths.add(local_abs);
 			}
 		}
 		MyLog.append("building local tree using abs_path: " + local_paths.toString());
-		long maxsize = (Long) opt.getOrDefault("maxsize", -1);
+		int maxsize = (Integer) opt.getOrDefault("maxsize", -1);
 		HashMap<String, HashMap> local_tree = DirTree.build_dir_tree(local_paths, opt);
 		MyLog.append("local_tree = " + local_tree);
 
@@ -81,9 +82,9 @@ public class ToPull {
 		MyLog.append("sending path: " + paths_string);
 		myconn.writeLine(paths_string);
 
-		char deep = (Character) opt.getOrDefault("Deep", "0");
+		String deep = (String) opt.getOrDefault("Deep", "0");
 		String deep_string = "<DEEP>" + deep + "</DEEP>";
-		MyLog.append("sending deep check flag: " + 0);
+		MyLog.append("sending deep check flag: " + deep_string);
 		myconn.writeLine(deep_string);
 
 		String local_tree_string = null;
@@ -105,10 +106,11 @@ public class ToPull {
 			local_tree_string = bld.toString();
 		}
 		MyLog.append("sending local_tree: " + local_tree.size() + " items");
+		MyLog.append(MyLog.VERBOSE, local_tree_string);
 		myconn.writeLine(local_tree_string);
 
 		String maxsize_string = "<MAXSIZE>" + maxsize + "</MAXSIZE>";
-		MyLog.append("sending maxsize: " + maxsize);
+		MyLog.append("sending maxsize: " + maxsize_string);
 		myconn.writeLine(maxsize_string);
 
 		String excludes_string = "<EXCLUDE>" + (String) opt.getOrDefault("Excludes", "") + "</EXCLUDE>";
@@ -379,7 +381,7 @@ public class ToPull {
 					String mode = matcher.group(1);
 					String filename = matcher.group(2);
 					String fullname = local_dir + "/" + filename;
-					MyLog.append("don't know how to set mode: " + mode + " " + fullname);					
+					MyLog.append("don't know how to set mode: " + mode + " " + fullname);
 				} else {
 					MyLog.append(MyLog.ERROR, "bad mode-file format at line : '" + l + "'");
 				}

@@ -49,7 +49,7 @@ public class Diff {
 	}
 	
 	public static void main(String[] args) {
-		MyLog.verbose = true;
+		Env.verbose = true;
 		diff("C:/users/william/github/tpsup/ps1/tpdist.ps1", "C:/users/william/tmp/ps1/tpdist.ps1");
 		MyLog.append(MyLog.VERBOSE, "done");
 	}

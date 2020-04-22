@@ -6,7 +6,6 @@ import javax.swing.JTextArea;
 
 public final class MyLog {
 	public static JTextArea jtextarea = null;
-	public static boolean verbose = Env.verbose;
 
 	public static enum Level {
 		ERROR, INFO, VERBOSE
@@ -24,7 +23,7 @@ public final class MyLog {
 			if (jtextarea != null) {
 				jtextarea.append(msg);
 			}
-		} else if (verbose || level == Level.INFO) {
+		} else if (Env.verbose || level == Level.INFO) {
 			// if in VERBOSE mode, print everything
 			System.out.println(msg);
 			if (jtextarea != null) {

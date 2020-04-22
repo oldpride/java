@@ -5,29 +5,22 @@ package com.tpsup.tpdist;
 //    C:/a/b/c2/d
 // C:/a/b/*/nosuchfile should return C:/a/b/*/nosuchfile
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class FileGlob {
 	public static ArrayList<String> get(String pattern, HashMap<String, Object> opt) {
 		ArrayList<String> results = new ArrayList<String>();
-		boolean verbose = opt != null && (Boolean) opt.getOrDefault("verbose", false);
+		if (opt == null) {
+			opt = new HashMap<String, Object>();
+		}
 		// default to check file existence
-		boolean checkExistence = opt == null || (Boolean) opt.getOrDefault("checkExistence", true);
+		boolean checkExistence = (Boolean) opt.getOrDefault("checkExistence", true);
 		// return the string if it is not pattern.
 		{
 			if (!pattern.contains("*") && !pattern.contains("?")) {
@@ -38,7 +31,7 @@ public class FileGlob {
 			}
 		}
 		// convert \ to /. remove ending /
-		pattern.replace("\\", "/").replace("/+$", "");
+		pattern.replace("\\", "/").replaceAll("/+$", "");
 		// we need to start from the part without * or ?
 		ArrayList<String> parts = new ArrayList<String>(Arrays.asList(pattern.split("/")));
 		if (parts.get(0).contains("*") || parts.get(0).contains("?")) {
@@ -60,8 +53,8 @@ public class FileGlob {
 				compiled_patterns[i] = FileSystems.getDefault().getPathMatcher("glob:" + part);
 			}
 		}
-		
-		MyLog.append(MyLog.VERBOSE, "is_glob = " + MyGson.gson.toJson(is_glob));
+
+		MyLog.append(MyLog.VERBOSE, "is_glob = " + MyGson.toJson(is_glob));
 
 		ArrayList<ArrayList<String>> todo = new ArrayList<ArrayList<String>>();
 		ArrayList<String> seed = new ArrayList<String>();
@@ -87,9 +80,7 @@ public class FileGlob {
 						// System.out.println(f.getName()); // shortname
 						String shortname = f.getName();
 						Path shortPath = Paths.get(shortname);
-						if (verbose) {
-							System.out.println(shortname + " vs " + parts.get(i));
-						}
+						MyLog.append(MyLog.VERBOSE, shortname + " vs " + parts.get(i));
 						if (compiled_patterns[i].matches(shortPath)) {
 							ArrayList<String> new_item = (ArrayList<String>) doing.clone();
 							new_item.add(shortname);
