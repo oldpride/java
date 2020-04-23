@@ -54,7 +54,7 @@ public class ExpectSocket {
 					// no new data
 					if (total_wait > ExpectTimeout) {
 						error_message = "timed out after " + ExpectTimeout
-								+ " seconds. very likely wrong protocol. expecting " + Version.expected_protocol + ".*";
+								+ " seconds. very likely wrong protocol. expecting " + Env.expected_peer_protocol + ".*";
 						myconn.writeLine(error_message);
 						break;
 					}

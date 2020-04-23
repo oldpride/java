@@ -67,7 +67,7 @@ public class ToPull {
 
 		// myconn.configureBlocking(true); we don't need to this because we
 		// use OutputStream to write, which is always blocking
-		String version_string = "<VERSION>" + Version.version + "</VERSION>";
+		String version_string = "<VERSION>" + Env.version + "</VERSION>";
 		MyLog.append("sending version: " + version_string);
 		myconn.writeLine(version_string);
 
@@ -157,9 +157,7 @@ public class ToPull {
 
 		captures.clear();
 		captures = expectSocket.capture(patternArray2, opt);
-		// captures = expectSocket.capture((String[]){ "<DELETES>(.*)</DELETES>",
-		// "<MTIMES>(.*)</MTIMES>", "<MODES>(.*)</MODES>",
-		// "<SPACE>(\\d+)</SPACE>", "<ADDS>(.*)</ADDS>", "<WARNS>(.*)</WARNS>" }, opt);
+
 		if (captures == null) {
 			return;
 		}
