@@ -49,8 +49,6 @@ public class DirTree {
 					MyLog.append(MyLog.ERROR, "unexpected path format, no '/' : " + abs_path);
 					System.exit(1); // exit here, not just skip, as mishandle this could remove files.
 				}
-				// https://stackoverflow.com/questions/41117898/how-to-create-empty-enumset
-				EnumSet<FileVisitOption> opts = EnumSet.noneOf(FileVisitOption.class);
 				FileWalker walker = new FileWalker(front, back, opt);
 				try {
 					walker.walk(abs_path, back, 30);
