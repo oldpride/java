@@ -23,9 +23,6 @@ public class ToPull {
 
 	public static void pull(MyConn myconn, ArrayList<String> remote_paths, String local_dir,
 			HashMap<String, Object> opt) {
-		if (opt == null) {
-			opt = new HashMap<String, Object>();
-		}
 		boolean dryrun = (Boolean) opt.getOrDefault("dryrun", false);
 		boolean diff = (Boolean) opt.getOrDefault("diff", false);
 
@@ -249,8 +246,8 @@ public class ToPull {
 		}
 
 		opt.put("chkSpace", RequiredSpace_string);
-		String tmpBase = System.getProperty("java.io.tmpdir");
-		String tmp_tar_file = TmpFile.createTmpFile(tmpBase, "filecopy", opt);
+		String tmpBase = (String) opt.getOrDefault("tmpdir", Env.tmpBase);
+		String tmp_tar_file = TmpFile.createTmpFile(tmpBase, "tpdist", opt);
 
 		if (tmp_tar_file == null) {
 			MyLog.append(MyLog.ERROR, "failed to create tmpFile");
@@ -273,7 +270,7 @@ public class ToPull {
 
 			String tmp_diff_dir = null;
 			if (diff) {
-				tmp_diff_dir = TmpFile.createTmpFile(tmpBase, "filecopy_dir", opt);
+				tmp_diff_dir = TmpFile.createTmpFile(tmpBase, "tpdist_dir", opt);
 				if (tmp_diff_dir == null) {
 					MyLog.append(MyLog.ERROR, "failed to create " + tmp_diff_dir);
 				}

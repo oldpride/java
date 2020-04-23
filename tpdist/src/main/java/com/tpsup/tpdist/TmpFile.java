@@ -10,28 +10,24 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class TmpFile {
-    public static String createTmpFile(String baseDir, String prefix, HashMap<String, Object> opt) {
-        String username = System.getProperty("user.name");
+    public static String createTmpFile(String baseDirString, String prefix, HashMap<String, Object> opt) {
         String yyyyMMdd = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
         String HHmmss = new SimpleDateFormat("HHmmss").format(Calendar.getInstance().getTime());
-        if (baseDir == null) {
-            baseDir = System.getProperty("user.home");
+
+        File baseDir = new File(baseDirString);
+        if (!baseDir.isDirectory()) {
+            baseDir.mkdirs();
         }
-        baseDir = baseDir.replace("\\", "/");
-        String rootString = baseDir + "/tmp_" + username;
-        File rootDir = new File(rootString);
-        if (!rootDir.isDirectory()) {
-            rootDir.mkdirs();
-        }
-        String tmpDirString = rootString + "/" + yyyyMMdd;
+        String tmpDirString = baseDirString.replace("\\", "/") + "/" + yyyyMMdd;
         File tmpDirFile = new File(tmpDirString);
         String tmpFileString = null;
         if (!tmpDirFile.isDirectory()) {
             tmpDirFile.mkdirs();
             // clean old files first
-            File[] list = rootDir.listFiles();
+            File[] list = baseDir.listFiles();
             if (list == null)
                 return tmpFileString;
             long now_ms = System.currentTimeMillis();
@@ -46,7 +42,7 @@ public class TmpFile {
                             FileUtils.deleteQuietly(f);
                         }
                     } catch (IOException e) {
-                    	MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+                    	MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
                     }
                 }
             }
@@ -60,7 +56,7 @@ public class TmpFile {
                     store = Files.getFileStore(Paths.get(tmpDirString));
                     available = store.getUsableSpace();
                 } catch (IOException e) {
-                	MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+                	MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
                     return null;
                 }
                 if (available < requiredSpace) {
@@ -69,7 +65,7 @@ public class TmpFile {
                     return null;
                 }
                 if (opt.containsKey("verbose")) {
-                	MyLog.append(MyLog.ERROR, tmpDirString + " has " + available + " bytes >= required "
+                	MyLog.append(tmpDirString + " has " + available + " bytes >= required "
                             + requiredSpace + " bytes");
                 }
             }

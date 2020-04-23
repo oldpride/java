@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.JTextArea;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ExpectSocket {
 	private MyConn myconn = null;
@@ -14,9 +14,6 @@ public class ExpectSocket {
 
 	public ExpectSocket(MyConn myconn, HashMap<String, Object> opt) {
 		this.myconn = myconn;
-		if (opt == null) {
-			opt = new HashMap<String, Object>();
-		}
 		this.ExpectTimeout = (Integer) opt.getOrDefault("ExpectTimeout", this.ExpectTimeout);
 	}
 
@@ -27,7 +24,6 @@ public class ExpectSocket {
 	// key=testdir2/e.txt|back=testdir2|front=/home/axptsusu/|mode=0644|mtime=1546436740|size=5|type=file
 	// </TREE><MAXSIZE>-l</MAXSIZE><EXCLUDE></EXCLUDE><MATCH></MATCH>
 	public ArrayList<ArrayList<String>> capture(String[] patterns, HashMap<String, Object> opt) {
-		ArrayList<ArrayList<String>> captures = new ArrayList<ArrayList<String>>();
 		StringBuilder bld = new StringBuilder();
 		int total_wait = 0; // seconds
 		int this_section_recv = 0; // number of bytes
@@ -38,18 +34,19 @@ public class ExpectSocket {
 
 		int ExpectTimeout = (Integer) opt.getOrDefault("ExpectTimeout", this.ExpectTimeout);
 
+		ArrayList<ArrayList<String>> captures = new ArrayList<ArrayList<String>>();
 		ArrayList<Pattern> compiled_patterns = new ArrayList<Pattern>();
 		for (String pattern : patterns) {
+			// compile patterns
 			Pattern compiled_pattern = Pattern.compile(pattern, Pattern.DOTALL);
 			compiled_patterns.add(compiled_pattern);
+			 // initialize captures array
+			captures.add(new ArrayList<String>());
 		}
 
 		try {
-			// turn off blocking (buffer) before reading out data
-			this.myconn.configureBlocking(false);
-
 			while (true) {
-				String new_data = this.myconn.NioReadString();
+				String new_data = this.myconn.NioReadString(); //non-blocking IO, need to use sleep to throttle
 				if (new_data == null) {
 					error_message = "remote side closed socket";
 					break;
@@ -67,26 +64,27 @@ public class ExpectSocket {
 				}
 
 				this_section_recv += myconn.last_in;
+				bld.append(new_data);
 
 				MyLog.append("received " + myconn.last_in + " byte(s), total=" + myconn.total_in
-						+ ", this section so far " + this_section_recv + " byte(s)" + bld.toString());
+						+ ", this section so far " + this_section_recv + " byte(s).");
+				MyLog.append(MyLog.VERBOSE, bld.toString());
 
 				// https://www.geeksforgeeks.org/array-vs-arraylist-in-java/
 				// ArrayList<String> captures = new ArrayList<String>();
 				Boolean all_matched = true;
+				String data_so_far = bld.toString();
 				for (int i = 0; i < compiled_patterns.size(); i++) {
 					if (matched.contains(i)) {
 						continue;
 					}
 					// https://stackoverflow.com/questions/17969436/java-regex-capturing-groups
 					Pattern pattern = compiled_patterns.get(i);
-					Matcher matcher = pattern.matcher(bld.toString());
-
+					Matcher matcher = pattern.matcher(data_so_far);
 					if (matcher.find()) {
-						captures.add(i, new ArrayList<String>());
-						captures.get(i).add(matcher.group(1));
-						captures.get(i).add(matcher.group(2));
-						captures.get(i).add(matcher.group(3));
+						for (int j = 0; j < matcher.groupCount(); j++) {
+							captures.get(i).add(matcher.group(j + 1));
+						}
 						MyLog.append("matched pattern= " + patterns[i]);
 						matched.add(i);
 					} else {
@@ -99,11 +97,11 @@ public class ExpectSocket {
 				}
 			}
 		} catch (Exception e) {
-			error_message = e.getStackTrace().toString();
+			error_message = ExceptionUtils.getStackTrace(e);
 		}
 
 		if (error_message != null) {
-			MyLog.append(error_message);
+			MyLog.append(MyLog.ERROR, error_message);
 			MyLog.append("matched so far");
 			for (int i = 0; i < patterns.length; i++) {
 				String line = "   pattern=" + patterns[i] + "  ";
@@ -124,7 +122,6 @@ public class ExpectSocket {
 				MyLog.append("   Last words: " + data);
 			}
 		}
-
 		return null;
 	}
 }

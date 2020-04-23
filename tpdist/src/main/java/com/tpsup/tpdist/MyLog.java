@@ -17,17 +17,31 @@ public final class MyLog {
 	final public static Level VERBOSE = Level.VERBOSE;
 
 	public static void append(Level level, String msg) {
+		if (msg == null) {
+			return;
+		}
+		
+		StackTraceElement caller = Thread.currentThread().getStackTrace()[1];
+		if (caller.getClassName().contains("MyLog")) {
+			caller = Thread.currentThread().getStackTrace()[2];
+		}
+		if (caller.getClassName().contains("MyLog")) {
+			caller = Thread.currentThread().getStackTrace()[3];
+		}
+		String prefix = caller.getClassName() + ":" + caller.getLineNumber();
+		
 		if (level == Level.ERROR) {
 			// always print error
-			System.err.println(msg);
+			System.err.println(prefix + " " + msg);
 			if (jtextarea != null) {
-				jtextarea.append(msg);
+				jtextarea.append(prefix + " " + msg);
 			}
 		} else if (Env.verbose || level == Level.INFO) {
 			// if in VERBOSE mode, print everything
-			System.out.println(msg);
+
+			System.out.println(prefix + " " + msg);
 			if (jtextarea != null) {
-				jtextarea.append(msg);
+				jtextarea.append(prefix + " " + msg);
 			}
 		}
 	}

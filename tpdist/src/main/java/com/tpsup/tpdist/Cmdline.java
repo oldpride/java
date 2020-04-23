@@ -1,21 +1,9 @@
 package com.tpsup.tpdist;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.FileVisitOption;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -89,13 +77,15 @@ public class Cmdline {
 		options.addOption("enc", "encode", true, "encode key string (seed) ");
 		options.addOption("maxsize", true, "INT. maximium size to be transferred. default -1, ie, unlimited");
 		options.addOption("maxtry", true, "INT. maximium tries of client when connect to server, default to 5");
+		options.addOption("tmpdir", true, "tmpdir. default to " + Env.tmpBase);
+
 
 		return options;
 	}
 
 	public static void main(String[] args) {
 		// MyLog.verbose = true;
-		MyLog.append("args = " + MyGson.toJson(args));
+		//MyLog.append("args = " + MyGson.toJson(args));
 		Options options = setOptions();
 		ArrayList<String> optionList = new ArrayList<String>();
 

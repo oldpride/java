@@ -27,19 +27,22 @@ public final class MyConn {
 
 	// java byte=8 bits, char=16bits
 	// use OutputStream (writes bytes) instead of OutputStreamWriter (writes char)
-	public Socket socket;
-	public OutputStream outstream; // for output, this writes bytes, blocking
+	public Socket socket = null;
+	public OutputStream outstream = null; // for output, this writes bytes, blocking
 	public SocketChannel socketChannel = null; // for input, this reads bytes, nonblocking (NIO)
 	
 	public ByteBuffer buffer = null;
 
 	public MyConn(Socket socket, String key) {
-		this.socket = socket;		
+		this.socket = socket;	
+		MyLog.append(MyLog.VERBOSE, "socket = " + socket.toString());
+		
 		this.socketChannel = socket.getChannel();
+		MyLog.append(MyLog.VERBOSE, "socketChannel = " + this.socketChannel.toString());
 		try {
 			this.outstream = socket.getOutputStream();
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 		}
 		
 		this.key = key;
@@ -61,7 +64,7 @@ public final class MyConn {
 			this.last_out = size;
 			this.total_out += size;
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 		}
 	}
 
@@ -79,7 +82,7 @@ public final class MyConn {
 		try {
 			size = this.socketChannel.read(this.buffer);
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 			return null;
 		}
 		
@@ -94,14 +97,14 @@ public final class MyConn {
 		this.last_in = size;
 		this.total_in += size;
 		
+		 MyLog.append("found " + size + " bytes in buffer");
+		
         buffer.flip();
         // https://docs.oracle.com/javase/7/docs/api/java/nio/Buffer.html#flip()
         // Flips this buffer. The limit is set to the current position and then the
         // position is set to zero.
         // flips the buff after write to the buffer and before read from the buffer
-        int n = buffer.limit();
-       
-        MyLog.append("found " + size + " bytes in buffer");
+        int n = buffer.limit();   
         
         if (n != size) {
             // this should never happen. just in case
@@ -124,7 +127,7 @@ public final class MyConn {
 		try {
 			size = this.socket.getInputStream().read(buffer); // this is blocked IO
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 			return -1;
 		}
 		
@@ -150,15 +153,7 @@ public final class MyConn {
 		try {
 			this.outstream.flush();
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
-		}
-	}
-
-	public void configureBlocking(boolean arg0) {
-		try {
-			this.socketChannel.configureBlocking(arg0);
-		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 		}
 	}
 
@@ -168,7 +163,7 @@ public final class MyConn {
 			this.socketChannel.close();
 			this.socket.close();	
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			MyLog.append(MyLog.ERROR, e.getMessage());
 		}	
 	}
 }

@@ -1,7 +1,6 @@
 package com.tpsup.tpdist;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
@@ -11,23 +10,20 @@ public class Client {
 	MyConn myconn = null;
 
 	public Client(String host, int port, HashMap<String, Object> opt) {
-//		SocketChannel socketchannel;
-//		try {
-//			socketchannel = SocketChannel.open();
-//		} catch (IOException e) {
-//			MyLog.append(MyLog.ERROR, e.getMessage());
-//			return;
-//		}
-//		Socket socket = socketchannel.socket();
 		InetSocketAddress address = new InetSocketAddress(host, port);
 		int maxtry = (Integer) opt.getOrDefault("maxtry", 5);
 		String key = (String) opt.getOrDefault("encode", null);
 		int interval = 5;
 		for (int i = 0; i < maxtry; i++) {
 			try {
-				Socket socket = new Socket();
-				socket.connect(address, 3000);
-				myconn = new MyConn(socket, key);
+				// to use Java Nonblocking IO, we must open SocketChannel (NIO) first, then
+				// get Socket from it.
+				// If we create Socket first then get SocketChannel from Socket.GetChannel(),
+				// the SocketChannel will be null
+	            SocketChannel socketchannel = SocketChannel.open();
+	            Socket socket = socketchannel.socket();
+				socket.connect(address, 3000); //time out after 3 seconds.
+				this.myconn = new MyConn(socket, key);
 				return;
 			} catch (IOException e) {
 				MyLog.append(MyLog.ERROR, e.getMessage());
