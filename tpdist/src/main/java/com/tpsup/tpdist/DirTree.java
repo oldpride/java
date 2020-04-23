@@ -10,24 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DirTree {
-	public static HashMap<String, HashMap> build_dir_tree(ArrayList<String> paths, HashMap<String, Object> opt) {
-		if (opt == null) {
-			opt = new HashMap<String, Object>();
-		}
-		ArrayList<Pattern> matches = null;
-		if (opt.containsKey("matches")) {
-			matches = new ArrayList<Pattern>();
-			for (String p : (ArrayList<String>) opt.get("matches")) {
-				matches.add(Pattern.compile(p));
-			}
-		}
-		ArrayList<Pattern> excludes = null;
-		if (opt.containsKey("excludes")) {
-			excludes = new ArrayList<Pattern>();
-			for (String p : (ArrayList<String>) opt.get("excludes")) {
-				excludes.add(Pattern.compile(p));
-			}
-		}
+	public static HashMap<String, HashMap> build_dir_tree(ArrayList<String> paths, HashMap<String, Object> opt) {	
 		String root_dir_pattern = "^[a-zA-Z]:[/]*$|^[/]+$|^[/]+cygdrive[/]+[^/]+[/]*$";
 		HashMap<String, HashMap<String, ArrayList>> AllowDenyPatterns = new HashMap<String, HashMap<String, ArrayList>>();
 		if (opt.containsKey("AllowDenyPatterns")) {
@@ -68,7 +51,7 @@ public class DirTree {
 				}
 				// https://stackoverflow.com/questions/41117898/how-to-create-empty-enumset
 				EnumSet<FileVisitOption> opts = EnumSet.noneOf(FileVisitOption.class);
-				FileWalker walker = new FileWalker(front, back);
+				FileWalker walker = new FileWalker(front, back, opt);
 				try {
 					walker.walk(abs_path, back, 30);
 				} catch (IOException e) {
