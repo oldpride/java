@@ -40,21 +40,29 @@ public class Cksum {
             0x9e7d9662, 0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668, 0xbcb4666d,
             0xb8757bda, 0xb5365d03, 0xb1f740b4 };
 
-    public static int checksumMappedFile(String filepath) throws IOException {
+    // java doesn't have unsigned data type. if we need to implement it, just use the next larger type
+    // and then mask it with 0xfff...
+    // unsigned byte (8-bit): byte b; int unsigned_b = (int)b & 0xff;
+    // unsigned int (32 bit): byte i; long unsigned_i = (long)i & 0xffffffffL;
+    // byte is 8 bit
+    // int is 32 bit. this is default data type when you write a literal number.
+    // long is 64 bit. can be written as either (long) 15, 15L, or 0xfL
+    
+    // the following cksum function needs unsigned 32-bit int, uint32. As Java doesn't have uint32,
+    // we use long (64 bit) & 0xffffffffL to implement
+  
+    public static long checksumMappedFile(String filepath) throws IOException {
         FileInputStream inputStream = new FileInputStream(filepath);
         File file = new File(filepath);
         long len = file.length();
-        byte buffer[] = new byte[1024 * 1024];
-        int cksum = 0;
+        byte buffer[] = new byte[4 * 1024 * 1024];
+        long cksum = 0;
         int size;
         while ((size = inputStream.read(buffer)) != -1) {
             for (int i = 0; i < size; i++) {
-                int c = buffer[i];
+                int c = (int)buffer[i] & 0xFF;
                 int index = (int) ((0xFF & (cksum >> 24)) ^ c);
-                if (index < 0) {
-                    index += 256;
-                }
-                cksum = (int) ((0xFFFFFFFF & (cksum << 8)) ^ crctab[index]);
+                cksum =  0xffffffffL & ((cksum << 8) ^ crctab[index]);
             }
         }
         inputStream.close();
@@ -62,32 +70,35 @@ public class Cksum {
             int c = (int) (len & 0xFF);
             len >>= 8;
             int index = (int) ((0xFF & (cksum >> 24)) ^ c);
-            if (index < 0) {
-                index += 256;
-            }
-            cksum = (int) ((0xFFFFFFFF & (cksum << 8)) ^ crctab[index]);
+            cksum = 0xffffffffL & ((cksum << 8)^ crctab[index]);
         }
-        cksum = -cksum;
-        int crc = cksum;
-        if (crc < 0) {
-            crc += 4294967296L;
-        }
-        return crc;
+        cksum = (~cksum) & 0xffffffffL;
+        return cksum;
     }
 
     public static void main(String[] args) throws Exception {
-        String file = "C:/Users/Public/Documents/CYGWIN/home/hantian/testdir/btxtlink";
-        MyLog.append(String.valueOf(checksumMappedFile(file)));
+        //String file = "C:/Users/Public/Documents/CYGWIN/home/hantian/testdir/btxtlink";
+    	String[] files = {"C:/Users/william/tmp/ps1/List-Exe.ps1",
+    			"C:/Users/william/tmp/ps1/netsuck.ps1",
+    			"C:/Users/william/tmp/ps1/print_key.ps1",
+    			"C:/Users/william/tmp/ps1/test_ctrl_c.ps1",
+    			"C:/Users/william/tmp/ps1/test_prog.ps1",
+    			"C:/Users/william/tmp/ps1/tpdist.ps1",
+    			"C:/Users/william/tmp/ps1/tpdist.ps1.old",
+    	};
+    	for (String f: files) {
+           MyLog.append(f + " " + String.valueOf(checksumMappedFile(f)));
+    	}
     }
 
-    public static HashMap<String, String> get_cksums(String[] files, HashMap<String, HashMap> tree) {
+    public static HashMap<String, String> get_cksums(String[] files, HashMap<String, HashMap<String, String>> local_tree) {
         HashMap<String, String> cksum_by_file = new HashMap<String, String>();
         for (String file : files) {
-            if (tree.containsKey(file)) {
+            if (local_tree.containsKey(file)) {
                 String cksum = "";
                 try {
                     cksum = String
-                            .valueOf(Cksum.checksumMappedFile(tree.get(file).get("front") + "/" + file));
+                            .valueOf(Cksum.checksumMappedFile(local_tree.get(file).get("front") + "/" + file));
                 } catch (IOException e) {
                 	MyLog.append(MyLog.ERROR, "cksum " + file + " failed");
                 	MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
