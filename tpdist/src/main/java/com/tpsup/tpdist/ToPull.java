@@ -62,7 +62,7 @@ public class ToPull {
 		}
 		MyLog.append("building local tree using abs_path: " + local_paths.toString());
 		int maxsize = (Integer) opt.getOrDefault("maxsize", -1);
-		HashMap<String, HashMap> local_tree = DirTree.build_dir_tree(local_paths, opt);
+		HashMap<String, HashMap<String, String>> local_tree = DirTree.build_dir_tree(local_paths, opt);
 		MyLog.append("local_tree = " + local_tree);
 
 		// myconn.configureBlocking(true); we don't need to this because we
@@ -84,25 +84,34 @@ public class ToPull {
 		MyLog.append("sending deep check flag: " + deep_string);
 		myconn.writeLine(deep_string);
 
+		int skipped = 0;
 		String local_tree_string = null;
 		{
 			StringBuilder bld = new StringBuilder();
 			bld.append("<TREE>\n");
 			for (String f : local_tree.keySet()) {
+				HashMap<String, String> node = local_tree.get(f);
+				if (node.containsKey("skip")) {
+					// don't send skipped file to remote; this way, remote will not tell us to
+					// delete them.
+					skipped++;
+					continue;
+				}
+
 				ArrayList<String> list = new ArrayList<String>();
 				list.add("key=" + f);
-				for (String attr : ((HashMap<String, String>) local_tree.get(f)).keySet()) {
-					String string = attr + "=" + local_tree.get(f).get(attr);
+				for (String attr : node.keySet()) {
+					String string = attr + "=" + node.get(attr);
 					list.add(string);
 				}
 				String line = StringUtils.join(list, "|");
 				bld.append(line);
 				bld.append("\n");
 			}
-			bld.append("</TREE>\n");
+			bld.append("</TREE>");
 			local_tree_string = bld.toString();
 		}
-		MyLog.append("sending local_tree: " + local_tree.size() + " items");
+		MyLog.append("sending local_tree: " + local_tree.size() + " items. skipped " + skipped);
 		MyLog.append(MyLog.VERBOSE, local_tree_string);
 		myconn.writeLine(local_tree_string);
 
@@ -110,11 +119,15 @@ public class ToPull {
 		MyLog.append("sending maxsize: " + maxsize_string);
 		myconn.writeLine(maxsize_string);
 
-		String excludes_string = "<EXCLUDE>" + (String) opt.getOrDefault("Excludes", "") + "</EXCLUDE>";
+		// excludes and matches are coming from command line. a single string, multiple
+		// patterns are separated by comma, ",".
+		// we need to replace the comma with newline
+		String excludes_string = "<EXCLUDE>" + ((String) opt.getOrDefault("excludes", "")).replace(",", "\n")
+				+ "</EXCLUDE>";
 		MyLog.append("sending excludes_string: " + excludes_string);
 		myconn.writeLine(excludes_string);
 
-		String matches_string = "<MATCH>" + (String) opt.getOrDefault("Matches", "") + "</MATCH>";
+		String matches_string = "<MATCH>" + ((String) opt.getOrDefault("matches", "")).replace(",", "\n") + "</MATCH>";
 		MyLog.append("sending matches_string: " + matches_string);
 		myconn.writeLine(matches_string);
 		myconn.flush();
@@ -148,6 +161,7 @@ public class ToPull {
 		// myconn.configureBlocking(true); not need this as OutputStream is always
 		// blocking
 		MyLog.append("sending cksums results: " + local_cksums_by_file.size() + " items");
+		MyLog.append(MyLog.VERBOSE, cksums_results_string);
 		myconn.writeLine(cksums_results_string);
 		myconn.flush();
 
@@ -232,7 +246,7 @@ public class ToPull {
 				}
 			}
 			for (String f : action_by_file.keySet()) {
-				MyLog.append(String.format("%10s %s\n", action_by_file.get(f), f));
+				MyLog.append(String.format("%10s %s", action_by_file.get(f), f));
 			}
 		}
 

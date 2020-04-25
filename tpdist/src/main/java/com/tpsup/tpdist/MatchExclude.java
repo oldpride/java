@@ -32,6 +32,24 @@ public class MatchExclude {
 		}
 	}
 
+	public MatchExclude(String[] matchesArray, String[] excludesArray) {
+		this.matches = new ArrayList<Pattern>();
+		for (String p : matchesArray) {
+			if (p.isEmpty()) {
+				continue;
+			}
+			this.matches.add(Pattern.compile(p));
+		}
+
+		this.excludes = new ArrayList<Pattern>();
+		for (String p : excludesArray) {
+			if (p.isEmpty()) {
+				continue;
+			}
+			this.excludes.add(Pattern.compile(p));
+		}
+	}
+
 	public boolean pass(String string) {
 		if (this.matches.size() > 0) {
 			boolean matched = false;

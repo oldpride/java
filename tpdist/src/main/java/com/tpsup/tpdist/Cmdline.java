@@ -11,6 +11,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class Cmdline {
 	public static String header = "\n" + "Usage:\n" + "\n" + "   tpdist in powershell\n" + "\n"
@@ -142,10 +143,18 @@ public class Cmdline {
 		MyLog.append(MyLog.VERBOSE, "opt = " + MyGson.toJson(opt));
 		MyLog.append(MyLog.VERBOSE, "positional args " + MyGson.toJson(cmd.getArgs()));
 
+		Access access = null;
+		try {
+			access = new Access(opt);
+		} catch (Exception e) {
+			MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
+			return;
+		}		
+		opt.put("access", access);
+		
 		if (argv.size() == 0) {
 			usage("wrong number of args", options);
-		}
-
+		}			
 		String role = argv.remove(0);
 
 		if (role.equals("server")) {

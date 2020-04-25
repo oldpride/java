@@ -1,10 +1,11 @@
 package com.tpsup.tpdist;
 
 public final class Env {
+	final public static String homedir = System.getProperty("user.home");
 	final public static String uname = System.getProperty("os.name");
 	final public static boolean isUnix = uname.toLowerCase().contains("unix|ux");
 	final public static boolean isWindows = uname.toLowerCase().contains("windows");
-	public final static String version = "7.0";
+	final public static String version = "7.0";
 	public static String mainVersion;
 	public static String expected_peer_protocol;
 

@@ -3,20 +3,20 @@ package com.tpsup.tpdist;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.regex.Pattern;
 
 public class FileWalker {
-	public HashMap<String, HashMap> tree;
+	public HashMap<String, HashMap<String, String>> tree;
 	public String front;
 	public String back;
 	private MatchExclude matchExclude;
+	private Access access;
 
 	public FileWalker(String front, String back, HashMap<String, Object> opt) {
-		this.tree = new HashMap<String, HashMap>();
+		this.tree = new HashMap<String, HashMap<String, String>>();
 		this.front = front;
 		this.back = back;
+		this.access = (Access) opt.get("access");
 
 		// excludes and matches are coming from two places
 		// 1. from command line. a single string, multiple patterns are separated by
@@ -29,12 +29,25 @@ public class FileWalker {
 		this.matchExclude = new MatchExclude(matches_string, excludes_string, "[,\n]");
 	}
 
+	// "path" is the full path,
+	// "relative" is the tail part, starting after $back
+	// remote and local cannot compare absolute paths as they are likely different
+	// directory structure. however, the tail part should be the same. therefore, we
+	// use the tail part as key.
 	public void walk(String path, String relative, int level) throws IOException {
 		File f = new File(path);
+		HashMap<String, String> kv = new HashMap<String, String>();
 		if (!this.matchExclude.pass(path)) {
 			return;
 		}
-		HashMap<String, String> kv = new HashMap<String, String>();
+		this.tree.put(relative, kv);
+
+		if (!this.access.is_allowed("file", path)) {
+			MyLog.append(path + " not allowed");
+			kv.put("skip", "not allowed");
+			return;
+		}
+
 		if (Files.isSymbolicLink(f.toPath())) {
 			kv.put("type", "link");
 			kv.put("mode", "0777");
@@ -43,7 +56,6 @@ public class FileWalker {
 			kv.put("mtime", String.valueOf(f.lastModified() / 1000));
 			kv.put("front", this.front);
 			kv.put("back", this.back);
-			this.tree.put(relative, kv);
 			MyLog.append(MyLog.VERBOSE, String.format("Symbolic link: %s", f));
 		} else if (Files.isRegularFile(f.toPath())) {
 			kv.put("type", "file");
@@ -52,9 +64,15 @@ public class FileWalker {
 			kv.put("mtime", String.valueOf(f.lastModified() / 1000));
 			kv.put("front", this.front);
 			kv.put("back", this.back);
-			this.tree.put(relative, kv);
 			MyLog.append(MyLog.VERBOSE, String.format("Regular file: %s", f));
 		} else if (f.isDirectory()) {
+			level--;
+			if (level < 0) {
+				String message = "Dir: " + relative + " too deep to parse";
+				kv.put("skip", message);
+				MyLog.append(MyLog.ERROR, message);
+				return;
+			}
 			kv.put("type", "dir");
 			kv.put("mode", "0755");
 			kv.put("size", "128"); // hard coded for directory
@@ -62,21 +80,13 @@ public class FileWalker {
 			kv.put("mtime", String.valueOf(f.lastModified() / 1000));
 			kv.put("front", this.front);
 			kv.put("back", this.back);
-			this.tree.put(relative, kv);
 			MyLog.append(MyLog.VERBOSE, "Dir: " + relative);
-			level--;
-			if (level < 0) {
-				MyLog.append(MyLog.ERROR, "Dir: " + relative + " too deep to parse");
-				return;
-			}
+
 			String[] list = f.list();
 			if (list == null)
 				return;
 			for (String shortname : list) {
 				String new_path = path + "/" + shortname;
-				if (!this.matchExclude.pass(new_path)) {
-					continue;
-				}
 				walk(new_path, relative + "/" + shortname, level);
 			}
 		} else {
