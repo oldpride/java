@@ -3,7 +3,13 @@ package com.tpsup.tpdist;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 
 public class Cksum {
     static long[] crctab = new long[] { 0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc,
@@ -77,17 +83,10 @@ public class Cksum {
     }
 
     public static void main(String[] args) throws Exception {
-        //String file = "C:/Users/Public/Documents/CYGWIN/home/hantian/testdir/btxtlink";
-    	String[] files = {"C:/Users/william/tmp/ps1/List-Exe.ps1",
-    			"C:/Users/william/tmp/ps1/netsuck.ps1",
-    			"C:/Users/william/tmp/ps1/print_key.ps1",
-    			"C:/Users/william/tmp/ps1/test_ctrl_c.ps1",
-    			"C:/Users/william/tmp/ps1/test_prog.ps1",
-    			"C:/Users/william/tmp/ps1/tpdist.ps1",
-    			"C:/Users/william/tmp/ps1/tpdist.ps1.old",
-    	};
-    	for (String f: files) {
-           MyLog.append(f + " " + String.valueOf(checksumMappedFile(f)));
+        List<File> files = new ArrayList<File>(FileUtils.listFiles(new File("C:/Users/william/github/tpsup/ps1"),
+                new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY));
+    	for (File f: files ) {
+           MyLog.append(String.valueOf(checksumMappedFile(f.getPath().replace("\\", "/"))) + " " + f);
     	}
     }
 
