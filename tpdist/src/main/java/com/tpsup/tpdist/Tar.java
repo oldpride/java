@@ -10,7 +10,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -73,6 +76,7 @@ public class Tar {
             } else {
                 tarEntry = new TarArchiveEntry(inputFile, relativeFilePath);
                 tarEntry.setSize(inputFile.length());
+                tarEntry.setModTime(inputFile.lastModified());
             }
             tarArchiveOutputStream.putArchiveEntry(tarEntry);
             tarArchiveOutputStream.write(IOUtils.toByteArray(new FileInputStream(inputFile)));
@@ -84,8 +88,6 @@ public class Tar {
     }
 
     public static void createTar(String outputString, String inputDirString) throws IOException {
-        File outputFile = new File(outputString);
-        File inputDirFile = new File(inputDirString);
         List<File> files = new ArrayList<File>(FileUtils.listFiles(new File(inputDirString),
                 new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY));
         ArrayList<String> inputList = new ArrayList<String>();
@@ -103,7 +105,7 @@ public class Tar {
         try {
             // use absolute paths
             if (willdo == 0) {
-                List<File> files = new ArrayList<File>(FileUtils.listFiles(new File("C:/Users/william/testdir"),
+                List<File> files = new ArrayList<File>(FileUtils.listFiles(new File("C:/Users/william/github/tpsup/ps1"),
                         new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY));
                 ArrayList<String> StringList = new ArrayList<String>();
                 for (File file : files) {
@@ -125,14 +127,16 @@ public class Tar {
                 tarArchiveOutputStream.close();
             }
             // test 2nd function
-            if (willdo == 0) {
-                createTar("c:/users/william/junk3.tar", "C:/Users/william/testdir");
+            if (willdo == 1) {
+                createTar("c:/users/william/junk3.tar", "C:/Users/william/github/tpsup/ps1");
             }
             // test unTar
             if (willdo == 1) {
-                String outputDir = "C:/Users/william/testuntar";
-                FileUtils.cleanDirectory(new File(outputDir));
-                List<File> outputFiles = unTar("C:/Users/william/junk.tar", outputDir);
+                String outputDir = "C:/Users/william/tmp3";
+                if ((new File(outputDir)).exists()) {
+                    FileUtils.cleanDirectory(new File(outputDir));
+                }
+                List<File> outputFiles = unTar("C:/Users/william/junk3.tar", outputDir);
                 MyLog.append("outputFiles = " + MyGson.toJson(outputFiles));
             }
         } catch (IOException e) {
@@ -143,10 +147,10 @@ public class Tar {
     }
 
     // https://stackoverflow.com/questions/315618/how-do-i-extract-a-tar-file-in-java/7556307#7556307
-    public static List<File> unTar(final String inputString, final String outputDirString)
+    public static List<File> unTar(final String inputTarFileName, final String outputDirName)
             throws FileNotFoundException, IOException, ArchiveException {
-        File inputFile = new File(inputString);
-        File outputDir = new File(outputDirString);
+        File inputFile = new File(inputTarFileName);
+        File outputDir = new File(outputDirName);
         MyLog.append(String.format("Untaring %s to dir %s.", inputFile.getAbsolutePath(),
                 outputDir.getAbsolutePath()));
         final List<File> untaredFiles = new LinkedList<File>();
@@ -177,8 +181,7 @@ public class Tar {
                 if (success) {
                     continue;
                 }
-            }
-            if (entry.isDirectory()) {
+            } else if (entry.isDirectory()) {
                 MyLog.append(String.format("Attempting to write output directory %s.",
                         outputFile.getAbsolutePath()));
                 if (!outputFile.exists()) {
@@ -200,6 +203,16 @@ public class Tar {
                 IOUtils.copy(debInputStream, outputFileStream);
                 outputFileStream.close();
             }
+            // set timestamp
+			BasicFileAttributeView attributes = Files.getFileAttributeView(outputFile.toPath(),
+					BasicFileAttributeView.class);
+			Date mtime = entry.getModTime();
+			FileTime fileTime = FileTime.fromMillis(mtime.getTime());
+			try {
+				attributes.setTimes(fileTime, fileTime, fileTime);
+			} catch (IOException e) {
+				MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+			}
             untaredFiles.add(outputFile);
         }
         debInputStream.close();
