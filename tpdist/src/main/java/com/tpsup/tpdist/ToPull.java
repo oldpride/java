@@ -60,6 +60,17 @@ public class ToPull {
 				local_paths.add(local_abs);
 			}
 		}
+		
+		// excludes and matches are coming from two places
+		// 1. from command line. a single string, multiple patterns are separated by
+		// comma, ",".
+		// 2. from remote pull request, a single string, multiple patterns are separated
+		// by newline, "\n"
+		// we will need this when build_dir_tree
+		String matches_str = (String) opt.getOrDefault("matches", "");
+		String excludes_str = (String) opt.getOrDefault("excludes", "");
+		opt.put("matchExclude", new MatchExclude(matches_str, excludes_str, "[,\n]"));
+
 		MyLog.append("building local tree using abs_path: " + local_paths.toString());
 		int maxsize = (Integer) opt.getOrDefault("maxsize", -1);
 		HashMap<String, HashMap<String, String>> local_tree = DirTree.build_dir_tree(local_paths, opt);

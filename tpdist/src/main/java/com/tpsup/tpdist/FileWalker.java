@@ -17,16 +17,7 @@ public class FileWalker {
 		this.front = front;
 		this.back = back;
 		this.access = (Access) opt.get("access");
-
-		// excludes and matches are coming from two places
-		// 1. from command line. a single string, multiple patterns are separated by
-		// comma, ",".
-		// 2. from remote pull request, a single string, multiple patterns are separated
-		// by
-		// newline, "\n"
-		String matches_string = (String) opt.getOrDefault("matches", "");
-		String excludes_string = (String) opt.getOrDefault("excludes", "");
-		this.matchExclude = new MatchExclude(matches_string, excludes_string, "[,\n]");
+        this.matchExclude = (MatchExclude) opt.get("matchExclude");
 	}
 
 	// "path" is the full path,

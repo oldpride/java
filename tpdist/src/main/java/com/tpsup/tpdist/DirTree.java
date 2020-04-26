@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -106,6 +107,11 @@ public class DirTree {
 	// key=junkdir/junk.tar|back=junkdir|front=/home/axptsusu/|mode=0644|mtime=1545237337|size=4165632|type=file
 	// // </TREE>
 
+	// overload to accept Array
+	public static HashMap<String, HashMap<String, String>> build_dir_tree(String[] paths, HashMap<String, Object> opt) {
+		return build_dir_tree(new ArrayList<String>(Arrays.asList(paths)), opt);		
+	}
+	
 	public static void main(String[] args) {
 		HashMap<String, Object> opt = new HashMap<String, Object>();
 		opt.put("verbose", true);
