@@ -170,22 +170,22 @@ public class Cmdline {
 				if (argv.size() != 0) {
 					usage("wrong number of args", options);
 				}
-				Client client = new Client(host, port, opt);
-				if (client.myconn == null) {
+				MyConn myconn = Client.connnect(host, port, opt);
+				if (myconn == null) {
 					return;
 				}
-				ToBePulled.bePulled(client.myconn, opt);
+				ToBePulled.bePulled(myconn, opt);
 			} else {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);
 				}
-				Client client = new Client(host, port, opt);
-				if (client.myconn == null) {
+				MyConn myconn = Client.connnect(host, port, opt);
+				if (myconn == null) {
 					return;
 				}
 				String local_dir = argv.remove(argv.size() - 1);
 				ArrayList<String> remote_paths = argv;
-				ToPull.pull(client.myconn, remote_paths, local_dir, opt);
+				ToPull.pull(myconn, remote_paths, local_dir, opt);
 			}
 		} else {
 			usage("unknown role=" + role, options);

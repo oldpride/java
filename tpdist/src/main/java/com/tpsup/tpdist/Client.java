@@ -7,13 +7,12 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 
 public class Client {
-	MyConn myconn = null;
-
-	public Client(String host, int port, HashMap<String, Object> opt) {
+	public static MyConn connnect(String host, int port, HashMap<String, Object> opt) {
 		InetSocketAddress address = new InetSocketAddress(host, port);
 		int maxtry = (Integer) opt.getOrDefault("maxtry", 5);
 		String key = (String) opt.getOrDefault("encode", null);
 		int interval = 5;
+
 		for (int i = 0; i < maxtry; i++) {
 			try {
 				// to use Java Nonblocking IO, we must open SocketChannel (NIO) first, then
@@ -23,8 +22,8 @@ public class Client {
 	            SocketChannel socketchannel = SocketChannel.open();
 	            Socket socket = socketchannel.socket();
 				socket.connect(address, 3000); //time out after 3 seconds.
-				this.myconn = new MyConn(socket, key);
-				return;
+				MyConn myconn = new MyConn(socket, key);
+				return myconn;
 			} catch (IOException e) {
 				MyLog.append(MyLog.ERROR, e.getMessage());
 			}
@@ -42,10 +41,12 @@ public class Client {
 			} catch (InterruptedException e) {
 				MyLog.append("^C");
 				// if we are Control+C'ed, return
-				return;
+				return null;
 			}
 		}
 
 		MyLog.append("failed to connect after " + maxtry + "times");
+		
+		return null;
 	}
 }
