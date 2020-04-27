@@ -2,10 +2,8 @@ package com.tpsup.tpdist;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,8 +17,17 @@ public class DirTree {
 
 		// note: Java doesn't have chdir() or pwd concept as it is not multi-threading
 		// safe
+		
+		String RelativeBase = (String) opt.getOrDefault("RelativeBase", null);
+		Pattern abs_pattern = Pattern.compile("^/|^[a-zA-Z]:");
+		
 		HashMap<String, HashMap<String, String>> tree = new HashMap<String, HashMap<String,String>>();
 		for (String path : paths) {
+			path = path.replace("\\", "/");			
+			if (RelativeBase != null && ! abs_pattern.matcher(path).find()) {
+				path = RelativeBase + "/" + path;
+			}
+			
 			ArrayList<String> globs = null;
 			globs = FileGlob.get(path, null);
 			if (globs == null) {

@@ -108,4 +108,9 @@ public class Cksum {
         }
         return cksum_by_file;
     }
+    
+    // overload to handle array list
+    public static HashMap<String, String> get_cksums(ArrayList<String> files, HashMap<String, HashMap<String, String>> local_tree) {
+    	return get_cksums(files.toArray(new String[0]), local_tree);
+    }
 }

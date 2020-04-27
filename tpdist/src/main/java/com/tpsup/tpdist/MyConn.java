@@ -54,7 +54,7 @@ public final class MyConn {
 		this.buffer = ByteBuffer.allocate(1024 * 1024);
 	}
 
-	public void write(byte[] data, int size) {
+	public void write(byte[] data, int offset, int size) {
 		try {
 			if (this.out_coder != null) {
 				this.outstream.write(this.out_coder.xor(data, size), 0, size);
@@ -70,7 +70,7 @@ public final class MyConn {
 
 	public void writeLine(String data) {
 		byte[] bytearray = (data + "\n").getBytes(StandardCharsets.UTF_8);
-		this.write(bytearray, bytearray.length);
+		this.write(bytearray, 0, bytearray.length);
 	}
 
 	public String NioReadString() {

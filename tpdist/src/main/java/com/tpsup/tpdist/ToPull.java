@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ToPull {
 	// this will be a static class: all methods are static
@@ -60,7 +61,7 @@ public class ToPull {
 				local_paths.add(local_abs);
 			}
 		}
-		
+
 		// excludes and matches are coming from two places
 		// 1. from command line. a single string, multiple patterns are separated by
 		// comma, ",".
@@ -180,7 +181,6 @@ public class ToPull {
 		String[] patternArray2 = { "<DELETES>(.*)</DELETES>", "<MTIMES>(.*)</MTIMES>", "<MODES>(.*)</MODES>",
 				"<SPACE>(\\d+)</SPACE>", "<ADDS>(.*)</ADDS>", "<WARNS>(.*)</WARNS>" };
 
-		captures.clear();
 		captures = expectSocket.capture(patternArray2, opt);
 
 		if (captures == null) {
@@ -276,7 +276,6 @@ public class ToPull {
 			MyLog.append(MyLog.ERROR, "failed to create tmpFile");
 			return;
 		}
-		MyLog.append("tmpFile = " + tmp_tar_file);
 
 		if (adds_string.isEmpty()) {
 			MyLog.append("nothing to add or update\n");
@@ -316,7 +315,7 @@ public class ToPull {
 				outStream.close();
 				MyLog.append("received tar_size=" + tar_size + "\n");
 			} catch (IOException e) {
-				MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+				MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
 			}
 
 			if (tar_size == 0) {
@@ -339,7 +338,7 @@ public class ToPull {
 				try {
 					FileUtils.forceDelete(new File(tmp_tar_file));
 				} catch (IOException e) {
-					MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+					MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
 				}
 			}
 
@@ -358,7 +357,7 @@ public class ToPull {
 					try {
 						FileUtils.deleteDirectory(new File(tmp_diff_dir));
 					} catch (IOException e) {
-						MyLog.append(MyLog.ERROR, e.getStackTrace().toString());
+						MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
 					}
 				}
 			}

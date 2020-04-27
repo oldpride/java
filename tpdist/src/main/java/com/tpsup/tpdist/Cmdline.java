@@ -174,7 +174,7 @@ public class Cmdline {
 				if (client.myconn == null) {
 					return;
 				}
-
+				ToBePulled.bePulled(client.myconn, opt);
 			} else {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);

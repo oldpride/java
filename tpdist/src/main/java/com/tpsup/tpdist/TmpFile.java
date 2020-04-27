@@ -73,7 +73,7 @@ public class TmpFile {
         
         // https://stackoverflow.com/questions/35842/how-can-a-java-program-get-its-own-process-id
         String pid = (ManagementFactory.getRuntimeMXBean().getName().split("@"))[0];
-        tmpFileString = tmpDirString + "/" + prefix + "_" + HHmmss + pid;
+        tmpFileString = tmpDirString + "/" + prefix + "_" + HHmmss + "_" + pid;
         return tmpFileString;
     }
 }

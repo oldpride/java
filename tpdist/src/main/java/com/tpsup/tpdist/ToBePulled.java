@@ -4,23 +4,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.JTextArea;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ToBePulled {
 	public static void bePulled(MyConn myconn, HashMap<String, Object> opt) {
@@ -56,11 +53,13 @@ public class ToBePulled {
 			return;
 		}
 
-		boolean check_mode = (Env.isUnix
-				&& (uname.toLowerCase().contains("unix") || uname.toLowerCase().contains("ux")))
-				|| (Env.isWindows && uname.toLowerCase().contains("windows"));
+//		boolean check_mode = (Env.isUnix
+//				&& (uname.toLowerCase().contains("unix") || uname.toLowerCase().contains("ux")))
+//				|| (Env.isWindows && uname.toLowerCase().contains("windows"));
+		// todo: I don't really know how to get windows or UNIX mode within java.
+		boolean check_mode = false;
 		MyLog.append("remote uname='" + uname + "'. we set check_mode=" + check_mode);
-		
+
 		HashMap<String, HashMap<String, String>> remote_tree = new HashMap<String, HashMap<String, String>>();
 		if (!remote_tree_block.isEmpty()) {
 			Pattern line_pattern = Pattern.compile("^key=");
@@ -86,9 +85,9 @@ public class ToBePulled {
 		MyLog.append(MyLog.VERBOSE, "remote_tree = " + MyGson.toJson(remote_tree));
 
 		MyLog.append("building local_tree using paths: " + local_paths_string);
-		
+
 		String[] local_paths = local_paths_string.split("[|]");
-		
+
 		// excludes and matches are coming from two places
 		// 1. from command line. a single string, multiple patterns are separated by
 		// comma, ",".
@@ -97,284 +96,300 @@ public class ToBePulled {
 		// we need this when build_dir_tree
 		opt.put("matchExclude", new MatchExclude(match_string, exclude_string, "[,\n]"));
 		
+		// on be-pulled side, set relative path's base to homedir
+		opt.put("RelativeBase", Env.homedir);
+
 		HashMap<String, HashMap<String, String>> local_tree = DirTree.build_dir_tree(local_paths, opt);
-		MyLog.append(MyLog.VERBOSE, "server_tree = " + MyGson.toJson(local_tree));
+		MyLog.append(MyLog.VERBOSE, "local_tree = " + MyGson.toJson(local_tree));
+		MyLog.append(MyLog.VERBOSE, "maxsize = " + maxsize);
 
 		// files to delete
-		ArrayList<String> deletes = new ArrayList<String>();		
+		ArrayList<String> deletes = new ArrayList<String>();
 		// files needs mode resetting
-		ArrayList<String> modes = new ArrayList<String>();		
+		Set<String> modes = new HashSet<String>();
 		// files can be diff'ed
-		HashSet<String> diff_by_file = new HashSet<String>();	
+		Set<String> diff_by_file = new HashSet<String>();
 		// files to add or update
 		HashMap<String, String> change_by_file = new HashMap<String, String>();
 		// files need mtime resetting
-		ArrayList<String> mtimes = new ArrayList<String>();
+		Set<String> need_mtime_reset = new HashSet<String>();
 		// files need cksum calculating
-		ArrayList<String> cksums = new ArrayList<String>();
+		ArrayList<String> need_cksums = new ArrayList<String>();
 		// warnings
 		ArrayList<String> warns = new ArrayList<String>();
 		
-		// compare server_tree with client_tree
-		HashSet<String> back_exists_on_server = new HashSet<String>();
-		
-		for (String k : local_tree.keySet()) {
-			// k is a relative filename
-			back_exists_on_server.add((String) local_tree.get(k).get("back"));
+		if (!check_mode) {
+			warns.add("file mode check is not available");
 		}
-		Pattern parent_dir_pattern = Pattern.compile("^(.+)/");
-		for (String k : client_tree.keySet()) {
+
+		// compare localtree with remote_tree
+		// sort string keys
+		List<String> remote_keys = new ArrayList(remote_tree.keySet());
+		Collections.sort(remote_keys);
+		for (String k : remote_keys) {
 			// k is a relative filename
-			if (!server_tree.containsKey(k)) {
-				String client_back = (String) client_tree.get(k).get("back");
-				// "back" is the relative root dir. only under the same "back"
-				// (root) dir, we can compare client and server's path.
-				if (back_exists_on_server.contains(client_back)) {
+			if (!local_tree.containsKey(k)) {
+				// if the back dir is not shown in local side at all, don't delete it on
+				// remote side.
+				// for example, assume remote side runs command as
+				// $0 remote host port a b
+				// if 'a' doesn't exist on the local side, we (local side) should not tell
+				// remote to delete b/a on the remote side
+				String back = (String) remote_tree.get(k).get("back");
+				if (local_tree.containsKey(back)) {
 					deletes.add(k);
-					// once we delete a file on client side, we need to sync up its parent dir's
-					// time stamp
-					Matcher parent_dir_matcher = parent_dir_pattern.matcher(k);
-					if (parent_dir_matcher.find()) {
-						String parent_dir = parent_dir_matcher.group(1);
-						if (server_tree.containsKey(parent_dir)) {
-							mtimes.add(parent_dir);
-						}
-					}
-				} else {
-					log.append(k + "'s starting dir " + client_back
-							+ " doesn't exist on server, don't delet it on client side " + newline);
 				}
 			}
 		}
-		// https://stackoverflow.com/questions/92252
-		// 8/how-to-sort-map-values-by-key-in-java
+		// we sort reverse so that files come before their parent dir. This way enables
+		// us to copy some (not have to be all) files under a dir
+		// https://stackoverflow.com/questions/922528/how-to-sort-map-values-by-key-in-java
 		// https://stackoverflow.com/questions/35122490/how-to-reverse-the-order-of-sortedset
-		SortedSet<String> reversedServerFileList = new TreeSet<String>(Collections.reverseOrder());
-		reversedServerFileList.addAll(server_tree.keySet());
+		SortedSet<String> reversedlocalFileList = new TreeSet<String>(Collections.reverseOrder());
+		reversedlocalFileList.addAll(local_tree.keySet());
 		long RequiredSpace = 0;
-		for (String k : reversedServerFileList) {
-			// k is a filename
-			HashMap server_node = server_tree.get(k);
-			long server_size = Integer.parseInt((String) server_node.get("size"));
-			String server_type = (String) server_node.get("type");
-			String server_mode = (String) server_node.get("mode");
-			String server_mtime = (String) server_node.get("mtime");
-			if (!client_tree.containsKey(k)) {
-				// client is missing this file
-				if (server_size > 0) {
-					if (maxsize >= 0 && RequiredSpace + server_size > maxsize) {
-						break;
-					}
-					RequiredSpace += server_size;
-				}
-				change_by_file.put(k, "add");
-				Matcher parent_dir_matcher = parent_dir_pattern.matcher(k);
-				if (parent_dir_matcher.find()) {
-					String parent_dir = parent_dir_matcher.group(1);
-					if (server_tree.containsKey(parent_dir)) {
-						mtimes.add(parent_dir);
-					}
-				}
-				if (server_type.equals("dir")) {
-					modes.add(k);
-				}
+
+		for (String k : reversedlocalFileList) {
+			// k is a relative filename
+			String skipped_message = local_tree.get(k).getOrDefault("skip", null);
+			if (skipped_message != null) {
+				warns.add("skipped " + k + ": " + skipped_message);
 				continue;
 			}
-			HashMap<String, String> client_node = client_tree.get(k);
-			long client_size = Integer.parseInt(client_node.get("size"));
-			String client_type = client_node.get("type");
-			String client_mode = client_node.get("mode");
-			String client_mtime = client_node.get("mtime");
-			if (!client_type.equals(server_type)) {
-				deletes.add(k);
-				if (server_size > 0) {
-					if (maxsize >= 0 && RequiredSpace + server_size > maxsize) {
+
+			HashMap<String, String> local_node = local_tree.get(k);
+			long local_size = Integer.parseInt((String) local_node.get("size"));
+			String local_type = (String) local_node.get("type");
+			String local_mode = (String) local_node.get("mode");
+			String local_mtime = (String) local_node.get("mtime");
+			if (!remote_tree.containsKey(k) || !remote_tree.get(k).get("type").equals(local_type)) {
+				// remote missing this file or remote is a different type of file: eg, file vs
+				// directory
+				if (local_size > 0) {
+					if (maxsize >= 0 && RequiredSpace + local_size > maxsize) {
+						MyLog.append("cutoff before " + k + ": RequiredSpace+local_size(" + RequiredSpace + "+"
+								+ local_size + ") > maxsize(" + maxsize + ")");
 						break;
 					}
-					RequiredSpace += server_size;
+					RequiredSpace += local_size;
 				}
-				change_by_file.put(k, "newType");
-				if (server_type.equals("dir")) {
+
+				if (remote_tree.containsKey(k)) {
+					// if remote file exists, it must be of a different type, remove it first and
+					// then add.
+					change_by_file.put(k, "newType");
+					deletes.add(k);
+				} else {
+					change_by_file.put(k, "add");
+				}
+
+				if (local_type.equals("dir")) {
 					// We don't tar dir because that would tar up all files under dir.
 					// But the problem with this approach is that the dir mode
 					// (permission) is then not recorded in the tar file. We will have
-					// to keep and send the mode information separately (from the tar file)
-					modes.add(k);
+					// to keep and send the mode information separately (from the tar file).
+					// so is mtime
+					if (check_mode) {
+						modes.add(k);
+					}
+					need_mtime_reset.add(k);
 				}
 				continue;
 			}
+
+			// we know both local_tree and remote_tree has the key now.
+			HashMap<String, String> remote_node = remote_tree.get(k);
+			long remote_size = Integer.parseInt(remote_node.get("size"));
+			String remote_mode = remote_node.get("mode");
+			String remote_mtime = remote_node.get("mtime");
+
 			// now both sides are same kind type: file, dir, or link
 			// we don't modify link's mode
-			if (!server_type.equals("link") && !client_mode.equals(server_mode)) {
+			if (check_mode && !local_type.equals("link") && !remote_mode.equals(local_mode)) {
 				modes.add(k);
 			}
-			if (client_size != server_size) {
-				if (server_size > 0) {
-					if (maxsize >= 0 && RequiredSpace + server_size > maxsize) {
+
+			// note: dir and link's sizes are hard-coded, so they will always equal.
+			// therefore, we are really only compares file's sizes.
+			// that is, only files can have different sizes.
+			if (remote_size != local_size) {
+				if (local_size > 0) {
+					if (maxsize >= 0 && RequiredSpace + local_size > maxsize) {
+						MyLog.append("cutoff before " + k + ": RequiredSpace+local_size(" + RequiredSpace + "+"
+								+ local_size + ") > maxsize(" + maxsize + ")");
 						break;
 					}
-					RequiredSpace += server_size;
+					RequiredSpace += local_size;
 				}
 				change_by_file.put(k, "update");
 				diff_by_file.add(k);
 				continue;
 			}
+
 			// compare {test} if it is populated
 			// dir's {test} and link's {test} are hardcoded, we are really only compare
 			// files.
-			if (!server_node.containsKey("test") && !client_node.containsKey("test")) {
+			if (!local_node.containsKey("test") && !remote_node.containsKey("test")) {
 				// if both missing tests, we compare mtime first
 				// for fast check (default), if size and mtime match, then no need to update.
 				// for deep check, or when mtime not matching (but size matching), resort to
 				// cksum.
-				if (!client_mtime.equals(server_mtime)) {
-					cksums.add(k);
-					mtimes.add(k);
+				if (!remote_mtime.equals(local_mtime)) {
+					need_cksums.add(k);
+					need_mtime_reset.add(k);
 				} else if (deep_check != 0) {
-					client_node.put("mtime", server_mtime);
-					cksums.add(k);
+					remote_node.put("mtime", local_mtime);
+					need_cksums.add(k);
 				}
-			} else if (!server_node.containsKey("test") || !client_node.containsKey("test")) {
+			} else if (!local_node.containsKey("test") || !remote_node.containsKey("test")) {
 				// we reach here if only one test is missing.
-				// note: if both tests missing, the logic above would take care of it.
-				// not sure what situation will lead us here yet
+				// note: if both tests are missing, the previous logic would have already taken
+				// care of it.
+				// not sure what situation could lead us here yet
 				change_by_file.put(k, "update");
-			} else if (!server_node.get("test").equals(client_node.get("test"))) {
+			} else if (!local_node.get("test").equals(remote_node.get("test"))) {
 				// now both tests exist, we can safely compare
 				// not sure what situation will lead us here yet
-				change_by_file.put("k", "update");
+				change_by_file.put(k, "update");
 			} else {
-				// server_node.get("test") == client_node.get("test")
-				if (!client_mtime.equals(server_mtime)) {
-					mtimes.add(k);
+				// local_node.get("test") == remote_node.get("test")
+				if (!remote_mtime.equals(local_mtime)) {
+					need_mtime_reset.add(k);
 				}
 			}
 		}
-		OutputStreamWriter osw = null;
-		try {
-// turn on blocking before sending out data
-			clientChannel.configureBlocking(true);
-			osw = new OutputStreamWriter(clientChannel.socket().getOutputStream(), "UTF-8");
-			String need_cksums_string = "<NEED_CKSUMS>" + String.join("\n", cksums) + "</NEED_CKSUMS>\n";
-			osw.write(need_cksums_string, 0, need_cksums_string.length());
-			log.append("sending need_chksums request to client: " + cksums.size() + " items" + newline);
-			// need to flush blocked (buffered) connection
-			osw.flush();
-		} catch (IOException e) {
-			log.append("failed to write to client" + newline);
-			e.printStackTrace();
+	
+		String need_cksums_string = "<NEED_CKSUMS>" + String.join("\n", need_cksums) + "</NEED_CKSUMS>";
+		MyLog.append("sending need_chksums request to remote: " + need_cksums.size() + " items");
+		myconn.writeLine(need_cksums_string);
+		myconn.flush();
+
+		MyLog.append("collecting local side cksums: " + need_cksums.size() + " items");
+		HashMap<String, String> local_cksum_by_file = Cksum.get_cksums(need_cksums, local_tree);
+		MyLog.append("local_cksum_by_file : " + local_cksum_by_file);
+
+		MyLog.append("waiting remote cksum results: ");
+		String[] patternArray2 = { "<CKSUM_RESULTS>(.*)</CKSUM_RESULTS>" };
+		captures = expectSocket.capture(patternArray2, opt);
+		if (captures == null) {
+			return;
 		}
-		log.append("collecting server side cksums: " + newline);
-		HashMap<String, String> server_cksum_by_file = Cksum.get_cksums(cksums.toArray(new String[cksums.size()]),
-				server_tree);
-		log.append("server_cksum_by_file : " + server_cksum_by_file + newline);
-		String client_cksum_string;
-		{
-			log.append("waiting client cksum results: " + newline);
-			String[] patternArray = { "<CKSUM_RESULTS>(.*)</CKSUM_RESULTS>" };
-			ExpectSocket result = new ExpectSocket(clientChannel, patternArray, log, opt);
-			if (!result.status.equals("matched")) {
-				log.append(result.status + newline);
-				return;
-			}
-			// Path server_path = Paths.get(result.captures.get(0));
-			client_cksum_string = result.captures.get(0);
-		}
-		HashMap<String, String> client_cksum_by_file = new HashMap<String, String>();
-		if (client_cksum_string != null && client_cksum_string.length() != 0) {
+		String remote_cksum_string = captures.get(0).get(0);
+
+		HashMap<String, String> remote_cksum_by_file = new HashMap<String, String>();
+		if (remote_cksum_string != null && remote_cksum_string.length() != 0) {
 			Pattern pattern = Pattern.compile("^(.+?)[ ](.+)$");
-			for (String line : client_cksum_string.split("\n")) {
+			for (String line : remote_cksum_string.split("\n")) {
 				Matcher matcher = pattern.matcher(line);
 				if (matcher.find()) {
 					String cksum = matcher.group(1);
 					String filename = matcher.group(2);
-					client_cksum_by_file.put(filename, cksum);
+					remote_cksum_by_file.put(filename, cksum);
 				} else {
-					log.append("bad format at line : '" + line + "'" + newline);
+					MyLog.append(MyLog.ERROR, "bad format at line : '" + line + "'");
 				}
 			}
 		}
-		log.append("client_cksum_by_file = " + client_cksum_by_file + newline);
-		log.append("cksums" + cksums + newline);
-		log.append("mtimes" + mtimes + newline);
-		log.append("deletes" + deletes + newline);
-		log.append("modes" + modes + newline);
-		log.append("change_by_file" + change_by_file + newline);
-		SortedSet<String> adds = new TreeSet<String>();
-		try {
-			// block 10 before writing to client
-			clientChannel.configureBlocking(true);
-			String deletes_string = "<DELETES>" + String.join("\n", deletes) + "</DELETES>" + newline;
-			osw.write(deletes_string, 0, deletes_string.length());
-			log.append("sending deletes : " + deletes.size() + " items" + newline);
-			adds.addAll(change_by_file.keySet());
-			String adds_string = "<ADDS>";
-			for (String f : adds) {
-				// https://stackoverflow.com/questions/47045/sprintf-equivalent-in-java
-				adds_string += String.format("%6s %s\n", change_by_file.get(f), f);
+
+		for (String f : local_cksum_by_file.keySet()) {
+			if (!remote_cksum_by_file.containsKey(f)) {
+				MyLog.append(MyLog.ERROR, "remote cksum missing for " + f);
+				change_by_file.put(f, "update");
+			} else if (!remote_cksum_by_file.get(f).equals(local_cksum_by_file.get(f))) {
+				change_by_file.put(f, "update");
+				diff_by_file.add(f); // only type=file can get here.
+			} else if (! remote_tree.get(f).get("mtime").equals(local_tree.get(f).get("mtime"))) {
+				need_mtime_reset.add(f);
 			}
-			adds_string += "</ADDS>" + newline;
-			osw.write(adds_string, 0, adds_string.length());
-			log.append("sending adds : " + adds.size() + " items" + newline);
-			String mtimes_string = "<MTIMES>";
-			for (String f : mtimes) {
-				log.append("mtimes " + f + " " + server_tree.get(f) + newline);
-				mtimes_string += String.format("%s %s\n", server_tree.get(f).get("mtime"), f);
-			}
-			mtimes_string += "</MTIMES>" + newline;
-			osw.write(mtimes_string, 0, mtimes_string.length());
-			log.append("sending mtimes : " + mtimes.size() + " items" + newline);
-			String modes_string = "<MODES>";
-			for (String f : modes) {
-				modes_string += String.format("%s %s\n", server_tree.get(f).get("mode"), f);
-			}
-			modes_string += "</MODES>" + newline;
-			osw.write(modes_string, 0, modes_string.length());
-			log.append("sending modees : " + modes.size() + " items" + newline);
-			String warns_string = "<WARNS>" + String.join("\n", warns) + "</WARNS>" + newline;
-			osw.write(warns_string, 0, warns_string.length());
-			log.append("sending warns : " + warns.size() + " items" + newline);
-			String space_string = "<SPACE>" + RequiredSpace + "</SPACE>" + newline;
-			osw.write(space_string, 0, space_string.length());
-			log.append("sending RequiredSpace : " + RequiredSpace + " bytes" + newline);
-			// need to flush blocked (buffered) connection
-			osw.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
 		}
-		String mode;
+		
 		{
-			log.append("waiting for transfer mode from client: " + newline);
-			String[] patternArray = { "please send (data|diff|unpacked)" };
-			ExpectSocket result = new ExpectSocket(clientChannel, patternArray, log, opt);
-			if (!result.status.equals("matched")) {
-				log.append(result.status + newline);
-				return;
+			// when we untar to update a file, the file's parent dir's time stamp is
+			// updated. we need
+			// to restore the time stamp
+
+			Set<String> set = change_by_file.keySet();
+			String[] array = set.toArray(new String[0]);
+			List<String> list = new ArrayList<String>();
+			list.addAll(Arrays.asList(array));
+			list.addAll(deletes);
+
+			Pattern parent_dir_pattern = Pattern.compile("^(.+)/");
+			for (String k : list) {
+				Matcher parent_dir_matcher = parent_dir_pattern.matcher(k);
+				if (parent_dir_matcher.find()) {
+					String parent_dir = parent_dir_matcher.group(1);
+					need_mtime_reset.add(parent_dir);
+				}
 			}
-			mode = result.captures.get(0);
 		}
-		log.append("received client tranfer mode: " + mode + ". creating local tar file" + newline);
-		if (!mode.equals("data") && !mode.equals("diff")) {
-			log.append("tranfer mode '" + mode + "' is not supported" + newline);
+
+		String deletes_string = "<DELETES>" + String.join("\n", deletes) + "</DELETES>";
+		MyLog.append("sending deletes : " + deletes.size() + " items");
+		MyLog.append(MyLog.VERBOSE, "   " + deletes_string);
+		myconn.writeLine(deletes_string);
+
+		String adds_string = StrBlda.build_string(change_by_file, "%6s %s\n", "ADDS");
+		MyLog.append("sending adds : " + change_by_file.size() + " items");
+		MyLog.append(MyLog.VERBOSE, "   " + adds_string);
+		myconn.writeLine(adds_string);
+	
+		String mtimes_string = StrBlda.build_string(local_tree, "%s %s\n", "MTIMES", "mtime", need_mtime_reset);
+		MyLog.append("sending mtimes : " + need_mtime_reset.size() + " items");
+		MyLog.append(MyLog.VERBOSE, "   " + mtimes_string);
+		myconn.writeLine(mtimes_string);
+
+		String modes_string = StrBlda.build_string(local_tree, "%s %s\n", "MODES", "mode", modes);
+		MyLog.append("sending modes : " + modes.size() + " items");	
+		MyLog.append(MyLog.VERBOSE, "   " + modes_string);
+		myconn.writeLine(modes_string);
+
+		String warns_string = "<WARNS>" + String.join("\n", warns) + "</WARNS>";
+		MyLog.append("sending warns : " + warns.size() + " items");
+		MyLog.append(MyLog.VERBOSE, "   " + warns_string);
+		myconn.writeLine(warns_string);
+
+		String space_string = "<SPACE>" + RequiredSpace + "</SPACE>";
+		MyLog.append("sending RequiredSpace : " + RequiredSpace + " bytes");
+		MyLog.append(MyLog.VERBOSE, "   " + space_string);
+		myconn.writeLine(space_string);
+
+		myconn.flush();
+
+		MyLog.append("waiting for transfer mode from remote: ");
+		String[] patternArray3 = { "please send (data|diff|unpacked)" };
+		captures = expectSocket.capture(patternArray3, opt);
+		if (captures == null) {
 			return;
 		}
-		String tmpFile = TmpFile.createTmpFile(null, "filecopy_server", new HashMap<String, String>());
-		log.append("tmpFile : " + tmpFile + newline);
+		String mode = captures.get(0).get(0);
+
+		String tmp_tar_file = TmpFile.createTmpFile(Env.tmpBase, "tpdist", opt);
+		
+		MyLog.append("received remote tranfer mode: " + mode + ". creating local tar file" + tmp_tar_file);
+		if (!mode.equals("data") && !mode.equals("diff")) {
+			String message = "tranfer mode '" + mode + "' is not supported";
+			MyLog.append(message);
+			myconn.writeLine(message);
+			return;
+		}
+		
 		ArrayList<String> files_to_tar = new ArrayList<String>();
 		if (mode.equals("diff")) {
 			files_to_tar.addAll(diff_by_file);
 		} else {
-			files_to_tar.addAll(adds);
+			files_to_tar.addAll(change_by_file.keySet());
 		}
+		
 		if (files_to_tar.size() == 0) {
-			log.append("no need to send anything to client" + newline);
+			MyLog.append("no need to send anything to remote");
 			return;
 		}
-		HashMap<String, ArrayList<String>> files_by_front = new HashMap<>();
+		
+		HashMap<String, ArrayList<String>> files_by_front = new HashMap<String, ArrayList<String>>();
 		for (String f : files_to_tar) {
-			String front = (String) server_tree.get(f).get("front");
-			if (server_tree.get(f).get("type").equals("dir")) {
+			String front = (String) local_tree.get(f).get("front");
+			if (local_tree.get(f).get("type").equals("dir")) {
 				// Skip non-empty dir because tar'ing dir will also tar the files underneath.
 				// But we include empty dir
 				File dir = new File(front + '/' + f);
@@ -388,41 +403,59 @@ public class ToBePulled {
 			}
 			files_by_front.get(front).add(f);
 		}
-		log.append("files_by_front = " + files_by_front + newline);
+		MyLog.append(MyLog.VERBOSE, "files_by_front = " + MyGson.toJson(files_by_front));
 		try {
 			TarArchiveOutputStream tarArchiveOutputStream = null;
 			for (String front : files_by_front.keySet()) {
-				tarArchiveOutputStream = Tar.createTar(tmpFile, front, files_by_front.get(front), true,
+				tarArchiveOutputStream = Tar.createTar(tmp_tar_file, front, files_by_front.get(front), true,
 						tarArchiveOutputStream);
 				tarArchiveOutputStream.close();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
+			return;
 		}
-		// turn on blocking before sending out data
-		int total_size = 0;
+		
+		MyLog.append("sending  tar-format data (mode=" + mode + ") to remote");
+		
+		// use blocked io to send data, therefore use java OutputStream
+		int tar_size = 0;
 		try {
-			clientChannel.configureBlocking(true);
 			// https://docs.oracle.com/javase/6/docs/api/java/net/Socket.html#getOutputStream()
 			// https://stackoverflow.com/questions/9046820/fastest-way-to-incrementally-read-a-large-file
-			InputStream inputStream = new FileInputStream(tmpFile);
-			OutputStream outputStream = clientChannel.socket().getOutputStream();
+			InputStream inputStream = new FileInputStream(tmp_tar_file);
 			// https://stackoverflow.com/questions/9046820/fastest-way-to-incrementally-read-a-large-file
 			byte buffer[] = new byte[1024 * 1024];
-			int read;
-			while ((read = inputStream.read(buffer)) != -1) {
-				log.append("bytes read and sent = " + read + newline);
-				outputStream.write(buffer, 0, read);
-				total_size += read;
+			int size;
+			while ((size = inputStream.read(buffer)) != -1) {
+				MyLog.append("   bytes read and sent = " + size);
+				myconn.write(buffer, 0, size);
+				tar_size += size;
 			}
-			outputStream.flush();
+            myconn.flush();
+            try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
+			}
 			inputStream.close();
-			clientChannel.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
+			return;
 		}
-		log.append("sent total_size=" + total_size + ". closed client connection\n");
-		log.append(" \n\n");
+		MyLog.append("sent tar_size=" + tar_size + ". closed remote connection");
+		
+		if ((Boolean) opt.getOrDefault("KeepTmpFile", false)) {
+			MyLog.append("tmp file " + tmp_tar_file + " is kept");
+		} else {
+			MyLog.append("removing tmp file " + tmp_tar_file);
+			try {
+				FileUtils.forceDelete(new File(tmp_tar_file));
+			} catch (IOException e) {
+				MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
+			}
+		}
+		MyLog.append("\n\n");
 		return;
 	}
 }

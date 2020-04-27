@@ -151,8 +151,8 @@ public class Tar {
             throws FileNotFoundException, IOException, ArchiveException {
         File inputFile = new File(inputTarFileName);
         File outputDir = new File(outputDirName);
-        MyLog.append(String.format("Untaring %s to dir %s.", inputFile.getAbsolutePath(),
-                outputDir.getAbsolutePath()));
+        MyLog.append(String.format("Untaring %s to dir %s.", inputFile.getAbsolutePath().replace("\\", "/"),
+                outputDir.getAbsolutePath().replace("\\", "/")));
         final List<File> untaredFiles = new LinkedList<File>();
         final InputStream is = new FileInputStream(inputFile);
         final TarArchiveInputStream debInputStream = (TarArchiveInputStream) new ArchiveStreamFactory()
