@@ -158,7 +158,29 @@ public class Cmdline {
 		String role = argv.remove(0);
 
 		if (role.equals("server")) {
+			int port = new Integer(argv.remove(0));
 
+			if (!opt.containsKey("reverse")) {
+				if (argv.size() != 0) {
+					usage("wrong number of args", options);
+				}
+				MyConn myconn = Server.listenAndAccept(port, opt);
+				if (myconn == null) {
+					return;
+				}
+				ToBePulled.bePulled(myconn, opt);
+			} else {
+				if (argv.size() < 2) {
+					usage("wrong number of args", options);
+				}
+				MyConn myconn = Server.listenAndAccept(port, opt);
+				if (myconn == null) {
+					return;
+				}
+				String local_dir = argv.remove(argv.size() - 1);
+				ArrayList<String> remote_paths = argv;
+				ToPull.pull(myconn, remote_paths, local_dir, opt);
+			}
 		} else if (role.equals("client")) {
 			if (argv.size() < 2) {
 				usage("wrong number of args", options);
