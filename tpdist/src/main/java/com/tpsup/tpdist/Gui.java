@@ -272,24 +272,71 @@ public class Gui extends JPanel implements ActionListener {
 				if (client_params == null) {
 					return;
 				}
-				RunnableClientPull clientPullRunnerable = new RunnableClientPull(client_params, pull_params, opt);
-				thread = new Thread(clientPullRunnerable);
+				RunnableClientPull runnable = new RunnableClientPull(client_params, pull_params, opt);
+				thread = new Thread(runnable);
 				threadName = (String) client_params.get("host") + "-" + (Integer) client_params.get("port");
 			} else {
 				HashMap<String, Object> server_params = get_server_params();
 				if (server_params == null) {
 					return;
 				}
-				RunnableServerPull serverPullRunnable = new RunnableServerPull(server_params, pull_params, opt);
-				thread = new Thread(serverPullRunnable);
+				RunnableServerPull runnable = new RunnableServerPull(server_params, pull_params, opt);
+				thread = new Thread(runnable);
 				threadName = "listener-" + (Integer) server_params.get("port");
 			}
 			
 			MyLog.append("spawning a thread to pull, threadName = " + threadName);
 			thread.setName(threadName);
 			thread.start();
-		} else if (e.getSource() == bePulledButton) {
-		} else if (e.getSource() == browseButton) {
+		} else if (eSource == bePulledButton) {
+			if (alreadyHaveAChild()) {
+				MyLog.append(MyLog.ERROR, "there is already a job running. please try later");
+				return;
+			}
+
+			HashMap<String, Object> opt = get_opt();
+			if (opt == null) {
+				return;
+			}
+			
+			Access access = null;
+			try {
+				access = new Access(opt);
+			} catch (Exception e1) {
+				MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e1));
+				return;
+			}		
+			
+			opt.put("access", access);
+
+			Thread thread;
+			String threadName;
+			if (clientModeRadio.isSelected()) {
+				HashMap<String, Object> client_params = get_client_params();
+				if (client_params == null) {
+					return;
+				}
+				RunnableClientBePulled runnable = new RunnableClientBePulled(client_params, opt);
+				thread = new Thread(runnable);
+				threadName = (String) client_params.get("host") + "-" + (Integer) client_params.get("port");
+			} else {
+				HashMap<String, Object> server_params = get_server_params();
+				if (server_params == null) {
+					return;
+				}
+				RunnableServerBePulled runnable = new RunnableServerBePulled(server_params, opt);
+				thread = new Thread(runnable);
+				threadName = "listener-" + (Integer) server_params.get("port");
+			}
+			
+			MyLog.append("spawning a thread to pull, threadName = " + threadName);
+			thread.setName(threadName);
+			thread.start();
+		} else if (eSource == browseButton) {
+		} else if (eSource == clientModeRadio) {
+			serverModeRadio.setSelected(false);
+		} else if (eSource == serverModeRadio) {
+			clientModeRadio.setSelected(false);
 //            int returnVal = fc.showDialog(this, "Select");
 //            if (returnVal == JFileChooser.APPROVE_OPTION) {
 //                File file = fc.getSelectedFile();

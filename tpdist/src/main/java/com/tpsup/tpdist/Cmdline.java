@@ -80,13 +80,12 @@ public class Cmdline {
 		options.addOption("maxtry", true, "INT. maximium tries of client when connect to server, default to 5");
 		options.addOption("tmpdir", true, "tmpdir. default to " + Env.tmpBase);
 
-
 		return options;
 	}
 
 	public static void main(String[] args) {
 		// MyLog.verbose = true;
-		//MyLog.append("args = " + MyGson.toJson(args));
+		// MyLog.append("args = " + MyGson.toJson(args));
 		Options options = setOptions();
 		ArrayList<String> optionList = new ArrayList<String>();
 
@@ -149,12 +148,12 @@ public class Cmdline {
 		} catch (Exception e) {
 			MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
 			return;
-		}		
+		}
 		opt.put("access", access);
-		
+
 		if (argv.size() == 0) {
 			usage("wrong number of args", options);
-		}			
+		}
 		String role = argv.remove(0);
 
 		if (role.equals("server")) {
@@ -164,11 +163,7 @@ public class Cmdline {
 				if (argv.size() != 0) {
 					usage("wrong number of args", options);
 				}
-				MyConn myconn = Server.listenAndAccept(port, opt);
-				if (myconn == null) {
-					return;
-				}
-				ToBePulled.bePulled(myconn, opt);
+				(new RunnableServerBePulled(port, opt)).run();
 			} else {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);
@@ -189,11 +184,7 @@ public class Cmdline {
 				if (argv.size() != 0) {
 					usage("wrong number of args", options);
 				}
-				MyConn myconn = Client.connnect(host, port, opt);
-				if (myconn == null) {
-					return;
-				}
-				ToBePulled.bePulled(myconn, opt);
+				(new RunnableClientBePulled(host, port, opt)).run();
 			} else {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);

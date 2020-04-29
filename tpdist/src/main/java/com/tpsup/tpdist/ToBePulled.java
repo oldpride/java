@@ -433,11 +433,6 @@ public class ToBePulled {
 				tar_size += size;
 			}
             myconn.flush();
-            try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
-			}
 			inputStream.close();
 		} catch (IOException e) {
 			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));

@@ -31,5 +31,6 @@ public class RunnableServerPull implements Runnable {
 			return;
 		}
 		ToPull.pull(myconn, remote_paths, local_dir, opt);
+		myconn.close();
 	}
 }
