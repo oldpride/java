@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -270,7 +271,7 @@ public class ToPull {
 
 		opt.put("chkSpace", RequiredSpace_string);
 		String tmpBase = (String) opt.getOrDefault("tmpdir", Env.tmpBase);
-		String tmp_tar_file = TmpFile.createTmpFile(tmpBase, "tpdist", opt);
+		String tmp_tar_file = TmpFile.createTmpFile(tmpBase, Env.projName, opt);
 
 		if (tmp_tar_file == null) {
 			MyLog.append(MyLog.ERROR, "failed to create tmpFile");
@@ -292,7 +293,7 @@ public class ToPull {
 
 			String tmp_diff_dir = null;
 			if (diff) {
-				tmp_diff_dir = TmpFile.createTmpFile(tmpBase, "tpdist_dir", opt);
+				tmp_diff_dir = TmpFile.createTmpFile(tmpBase, Env.projName+"_dir", opt);
 				if (tmp_diff_dir == null) {
 					MyLog.append(MyLog.ERROR, "failed to create " + tmp_diff_dir);
 				}
@@ -407,5 +408,9 @@ public class ToPull {
 			}
 		}
 		MyLog.append("all done\n\n");
+	}
+
+	public static void pull(MyConn myconn, String[] remote_paths, String local_dir, HashMap<String, Object> opt) {
+		ToPull.pull(myconn, (new ArrayList<String>(Arrays.asList(remote_paths))), local_dir, opt);		
 	}
 }

@@ -364,7 +364,7 @@ public class ToBePulled {
 		}
 		String mode = captures.get(0).get(0);
 
-		String tmp_tar_file = TmpFile.createTmpFile(Env.tmpBase, "tpdist", opt);
+		String tmp_tar_file = TmpFile.createTmpFile(Env.tmpBase, Env.projName, opt);
 		
 		MyLog.append("received remote tranfer mode: " + mode + ". creating local tar file" + tmp_tar_file);
 		if (!mode.equals("data") && !mode.equals("diff")) {

@@ -173,7 +173,7 @@ public class Cmdline {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);
 				}
-				MyConn myconn = Server.listenAndAccept(port, opt);
+				MyConn myconn = Server.listenAndAccept(port, opt);;
 				if (myconn == null) {
 					return;
 				}
@@ -181,6 +181,7 @@ public class Cmdline {
 				ArrayList<String> remote_paths = argv;
 				ToPull.pull(myconn, remote_paths, local_dir, opt);
 			}
+
 		} else if (role.equals("client")) {
 			if (argv.size() < 2) {
 				usage("wrong number of args", options);
@@ -201,13 +202,9 @@ public class Cmdline {
 				if (argv.size() < 2) {
 					usage("wrong number of args", options);
 				}
-				MyConn myconn = Client.connnect(host, port, opt);
-				if (myconn == null) {
-					return;
-				}
 				String local_dir = argv.remove(argv.size() - 1);
 				ArrayList<String> remote_paths = argv;
-				ToPull.pull(myconn, remote_paths, local_dir, opt);
+				(new ClientPullRunnable(host, port, remote_paths, local_dir, opt)).run();
 			}
 		} else {
 			usage("unknown role=" + role, options);
