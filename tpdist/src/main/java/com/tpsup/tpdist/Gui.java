@@ -11,6 +11,8 @@ import java.io.File;
 import javax.swing.*;
 import javax.swing.border.Border;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 public class Gui extends JPanel implements ActionListener {
 	// https://www.baeldung.com/java-serial-version-uid
 	private static final long serialVersionUID = 1L;
@@ -211,6 +213,29 @@ public class Gui extends JPanel implements ActionListener {
 		return map;
 	}
 
+	public HashMap<String, Object> get_server_params() {
+		HashMap<String, Object> map = new HashMap<String, Object>();
+
+		String serverPortString = serverPortText.getText();
+
+		int serverPort;
+		try {
+			serverPort = Integer.parseInt(serverPortString);
+		} catch (Exception e) {
+			MyLog.append(MyLog.ERROR, "bad format in client HostPort");
+			clientHostPortText.setBorder((Border) Color.RED);
+
+			// reset color
+			// https://stackoverflow.com/questions/43475953/jtextfield-reset-border-to-system-default
+			serverPortText.setBorder(new JTextField().getBorder());
+			return null;
+		}
+
+		map.put("port", serverPort);
+
+		return map;
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		Object eSource = e.getSource();
 
@@ -219,7 +244,7 @@ public class Gui extends JPanel implements ActionListener {
 				MyLog.append(MyLog.ERROR, "there is already a job running. please try later");
 				return;
 			}
-			
+
 			HashMap<String, Object> pull_params = get_pull_params();
 			if (pull_params == null) {
 				return;
@@ -229,78 +254,41 @@ public class Gui extends JPanel implements ActionListener {
 			if (opt == null) {
 				return;
 			}
+			
+			Access access = null;
+			try {
+				access = new Access(opt);
+			} catch (Exception e1) {
+				MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e1));
+				return;
+			}		
+			
+			opt.put("access", access);
 
+			Thread thread;
+			String threadName;
 			if (clientModeRadio.isSelected()) {
 				HashMap<String, Object> client_params = get_client_params();
 				if (client_params == null) {
 					return;
 				}
-
-				ClientPullRunnable clientPullRunnerable = new ClientPullRunnable((String) client_params.get("host"),
-						(Integer) client_params.get("port"), (String[]) pull_params.get("remote_paths"),
-						(String) pull_params.get("local_dir"), opt);
-
-				Thread thread = new Thread(clientPullRunnerable);
-				thread.setName((String) client_params.get("host") + "-" + (Integer) client_params.get("port"));
-				thread.start();
+				RunnableClientPull clientPullRunnerable = new RunnableClientPull(client_params, pull_params, opt);
+				thread = new Thread(clientPullRunnerable);
+				threadName = (String) client_params.get("host") + "-" + (Integer) client_params.get("port");
 			} else {
-				int serverPort = Integer.parseInt(serverPortText.getText());
+				HashMap<String, Object> server_params = get_server_params();
+				if (server_params == null) {
+					return;
+				}
+				RunnableServerPull serverPullRunnable = new RunnableServerPull(server_params, pull_params, opt);
+				thread = new Thread(serverPullRunnable);
+				threadName = "listener-" + (Integer) server_params.get("port");
 			}
-
-//            if (alreadyHaveAChild()) {
-//                return;
-//            }
-//            String pullHostPOrtString = this.pullHos.getText();
-//            String remotePath = Gui.this.remotePathText.getText();
-//            String localPath = Gui.this.localPathText.getText();
-//            String excludePattern = Gui.this.excludeText.getText();
-//            String matchPattern = Gui.this.matchText.getText();
-//            Pattern expectedServerPattern = Pattern.compile("^([^:]+):(\\d+)$");
-//            Matcher serverMatcher = expectedServerPattern.matcher(serverString);
-//            String remoteHost, remotePort;
-//            if (serverMatcher.find()) {
-//                remoteHost = serverMatcher.group(1);
-//                remotePort = serverMatcher.group(2);
-//            } else {
-//                log.append("remote server " + serverString
-//                        + "in bad format, shoud be Host:Port. Host can be hostname or IP, and Port must be an integer"
-//                        + newline);
-//                return;
-//            }
-//            log.append("spawning a client thread to connect to " + serverString + newline);
-//            HashMap<String, String> opt = new HashMap<>();
-//            opt.put("ExcludeString", excludePattern);
-//            opt.put("MatchString", matchPattern);
-//            opt.put("timeout", "5");
-//            if (e.getSource() == pullDryrunButton) {
-//                opt.put("dryrun", "1");
-//            }
-//            ClientPull clientPull = new ClientPull(remoteHost, remotePort, remotePath, localPath, log, opt);
-//            Thread thread = new Thread(clientPull);
-//            thread.setName("port-" + remotePort);
-//            thread.start();
-		} else if (eSource == serverModeRadio) {
-			serverModeRadio.setSelected(true);
-			;
-			clientModeRadio.setSelected(false);
-		} else if (eSource == clientModeRadio) {
-			serverModeRadio.setSelected(false);
-			clientModeRadio.setSelected(true);
-			// if (alreadyHaveAChild()) {
-//                return;
-//            }
-//            String localPort = Gui.this.portText.getText();
-//            Pattern expectedPortPattern = Pattern.compile("^\\d+$");
-//            Matcher portMatcher = expectedPortPattern.matcher(localPort);
-//            if (!portMatcher.find()) {
-//                log.append("port " + localPort + "in bad format, should be an positive integer" + newline);
-//                return;
-//            }
-//            log.append("spawning a thread at port " + localPort + newline);
-//            Server listener = new Server(localPort, log, 5);
-//            Thread thread = new Thread(listener);
-//            thread.setName("port-" + localPort);
-//            thread.start();
+			
+			MyLog.append("spawning a thread to pull, threadName = " + threadName);
+			thread.setName(threadName);
+			thread.start();
+		} else if (e.getSource() == bePulledButton) {
 		} else if (e.getSource() == browseButton) {
 //            int returnVal = fc.showDialog(this, "Select");
 //            if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -312,7 +300,7 @@ public class Gui extends JPanel implements ActionListener {
 //                log.append("browser is cancelled by user." + newline);
 //            }
 //            log.setCaretPosition(log.getDocument().getLength());
-		} else if (e.getSource() == bePulledButton) {
+//		} else if (e.getSource() == bePulledButton) {
 //            if (alreadyHaveAChild()) {
 //                return;
 //            }
