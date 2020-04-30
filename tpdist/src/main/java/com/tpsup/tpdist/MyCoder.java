@@ -1,8 +1,5 @@
 package com.tpsup.tpdist;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-
 public final class MyCoder {
 	private int index = 0; // current char position in key_str
 	public String key_str = null;

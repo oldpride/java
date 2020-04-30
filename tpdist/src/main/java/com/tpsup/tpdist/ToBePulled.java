@@ -124,7 +124,7 @@ public class ToBePulled {
 
 		// compare localtree with remote_tree
 		// sort string keys
-		List<String> remote_keys = new ArrayList(remote_tree.keySet());
+		List<String> remote_keys = new ArrayList<String>(remote_tree.keySet());
 		Collections.sort(remote_keys);
 		for (String k : remote_keys) {
 			// k is a relative filename
