@@ -1,9 +1,6 @@
 package com.tpsup.tpdist;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.awt.*;
 import java.awt.event.*;
@@ -28,6 +25,7 @@ public class Gui extends JPanel implements ActionListener {
 	// pull
 	JTextField pullRemotePathsText, pullLocalDirText, excludesText, matchesText;
 	JButton pullButton, pullDryrunButton, pullDiffButton, browseButton;
+	JFileChooser fileChooser;
 	// to-be-pulled
 	JButton bePulledButton;
 	// encode
@@ -35,7 +33,8 @@ public class Gui extends JPanel implements ActionListener {
 	// verbose
 	JRadioButton verboseModeRadio;
 
-	JFileChooser fileChooser;
+	public final String threadNamePrefix = Env.projName + "-" + "thread-";
+	public final Pattern threadPattern = Pattern.compile(threadNamePrefix);
 
 	public Gui() {
 		super(new BorderLayout());
@@ -72,7 +71,10 @@ public class Gui extends JPanel implements ActionListener {
 		JLabel pullLocalDirLabel = new JLabel("Local Dir");
 		pullLocalDirText = new JTextField();
 		pullLocalDirText.setText("C:/Users/william/client");
-		browseButton = new JButton("Browse");
+        fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        browseButton = new JButton("or Browse ...");
+        browseButton.addActionListener(this);
 
 		JLabel excludesLabel = new JLabel("RegEx Exclude Patterns");
 		JLabel excludesLabel2 = new JLabel("Optional, separated by ','");
@@ -134,6 +136,7 @@ public class Gui extends JPanel implements ActionListener {
 		row++;
 		panel.add(pullLocalDirLabel, gbc(row, 0, 1, false));
 		panel.add(pullLocalDirText, gbc(row, 1, 1, true));
+
 		panel.add(browseButton, gbc(row, 2, 1, false));
 		row++;
 		panel.add(excludesLabel, gbc(row, 0, 1, false));
@@ -221,13 +224,11 @@ public class Gui extends JPanel implements ActionListener {
 		int serverPort;
 		try {
 			serverPort = Integer.parseInt(serverPortString);
+			serverPortText.setForeground(Color.BLACK);
 		} catch (Exception e) {
-			MyLog.append(MyLog.ERROR, "bad format in client HostPort");
-			clientHostPortText.setBorder((Border) Color.RED);
-
-			// reset color
-			// https://stackoverflow.com/questions/43475953/jtextfield-reset-border-to-system-default
-			serverPortText.setBorder(new JTextField().getBorder());
+			MyLog.append(MyLog.ERROR, "bad format in server port");
+			MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
+			serverPortText.setForeground(Color.RED);
 			return null;
 		}
 
@@ -241,7 +242,6 @@ public class Gui extends JPanel implements ActionListener {
 
 		if (eSource == pullButton || eSource == pullDryrunButton || eSource == pullDiffButton) {
 			if (alreadyHaveAChild()) {
-				MyLog.append(MyLog.ERROR, "there is already a job running. please try later");
 				return;
 			}
 
@@ -290,7 +290,6 @@ public class Gui extends JPanel implements ActionListener {
 			thread.start();
 		} else if (eSource == bePulledButton) {
 			if (alreadyHaveAChild()) {
-				MyLog.append(MyLog.ERROR, "there is already a job running. please try later");
 				return;
 			}
 
@@ -318,7 +317,7 @@ public class Gui extends JPanel implements ActionListener {
 				}
 				RunnableClientBePulled runnable = new RunnableClientBePulled(client_params, opt);
 				thread = new Thread(runnable);
-				threadName = (String) client_params.get("host") + "-" + (Integer) client_params.get("port");
+				threadName = (String) threadNamePrefix + client_params.get("host") + "-" + (Integer) client_params.get("port");
 			} else {
 				HashMap<String, Object> server_params = get_server_params();
 				if (server_params == null) {
@@ -326,70 +325,52 @@ public class Gui extends JPanel implements ActionListener {
 				}
 				RunnableServerBePulled runnable = new RunnableServerBePulled(server_params, opt);
 				thread = new Thread(runnable);
-				threadName = "listener-" + (Integer) server_params.get("port");
+				threadName = threadNamePrefix + "listener-" + (Integer) server_params.get("port");
 			}
 			
 			MyLog.append("spawning a thread to pull, threadName = " + threadName);
 			thread.setName(threadName);
 			thread.start();
 		} else if (eSource == browseButton) {
+          int returnVal = fileChooser.showDialog(this, "Select");
+          if (returnVal == JFileChooser.APPROVE_OPTION) {
+              File file = fileChooser.getSelectedFile();
+              // This is where a real application would save the file, 
+              String fullPath = fileChooser.getCurrentDirectory().toString().replace("\\", "/") + "/" + file.getName();
+              MyLog.append("selected: " + fullPath);
+              this.pullLocalDirText.setText(fullPath);
+          } else {
+              MyLog.append("browser is cancelled by user.");
+          }
+          //MyLog.setCaretPosition(log.getDocument().getLength());
 		} else if (eSource == clientModeRadio) {
 			serverModeRadio.setSelected(false);
 		} else if (eSource == serverModeRadio) {
 			clientModeRadio.setSelected(false);
-//            int returnVal = fc.showDialog(this, "Select");
-//            if (returnVal == JFileChooser.APPROVE_OPTION) {
-//                File file = fc.getSelectedFile();
-//                // This is where a real application would save the file, 
-//                log.append("selected: " + fc.getCurrentDirectory() + "/" + file.getName() + "." + newline);
-//                this.localPushPathText.setText(fc.getCurrentDirectory() + "/" + file.getName());
-//            } else {
-//                log.append("browser is cancelled by user." + newline);
-//            }
-//            log.setCaretPosition(log.getDocument().getLength());
-//		} else if (e.getSource() == bePulledButton) {
-//            if (alreadyHaveAChild()) {
-//                return;
-//            }
-//            String SourcePath = this.localPushPathText.getText();
-//            String ServerUrl = this.pushServerText.getText();
-//            Pattern expectedPattern = Pattern.compile("^\\S+:\\S+$");
-//            Matcher matcher = expectedPattern.matcher(ServerUrl);
-//            if (matcher.find()) {
-//            } else {
-//                log.append("Server Host:Port= " + ServerUrl + "in bad format." + newline);
-//                return;
-//            }
-//            log.append("spawning a client thread to connect to " + ServerUrl + newline);
-//            ClientPush clientPush = new ClientPush(SourcePath, ServerUrl, log);
-//            Thread thread = new Thread(clientPush);
-//            thread.setName("port-" + ServerUrl);
-//            thread.start();
 		}
 	}
 
 	private boolean alreadyHaveAChild() {
-		Pattern threadPattern = Pattern.compile("port-");
 		// https://stackoverflow.com/questions/15370120/get-thread-by-name
 		for (Thread t : Thread.getAllStackTraces().keySet()) {
 			if (threadPattern.matcher(t.getName()).find()) {
-//                log.append("thread " + t.getName() + " is still running, cannot spawn new thread" + newline);
+				MyLog.append(MyLog.ERROR, "there is already a job running. please try later");
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/** Returns an ImageIcon, or null if the path was invalid. */
-	protected static ImageIcon createImageIcon(String path) {
-		java.net.URL imgURL = Gui.class.getResource(path);
-		if (imgURL != null) {
-			return new ImageIcon(imgURL);
-		} else {
-			System.err.println("Couldn't find file: " + path);
-			return null;
-		}
-	}
+//	/** Returns an ImageIcon, or null if the path was invalid. */
+//	protected static ImageIcon createImageIcon(String path) {
+//		java.net.URL imgURL = Gui.class.getResource(path);
+//		if (imgURL != null) {
+//			return new ImageIcon(imgURL);
+//		} else {
+//			MyLog.append(MyLog.ERROR, "Couldn't find file: " + path);
+//			return null;
+//		}
+//	}
 
 	/**
 	 * Create the GUI and show it. For thread safety, this method should be invoked

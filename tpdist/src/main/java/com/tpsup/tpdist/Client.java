@@ -32,7 +32,7 @@ public class Client {
 				// no need to sleep after last round
 				break;
 			}
-			MyLog.append("On $host please run");
+			MyLog.append("On " + host + " please run");
 			MyLog.append("   tpdist server " + port);
 			MyLog.append("   Will retry in " + interval + " seconds for " + (maxtry - i - 1) + " time(s)");
 
