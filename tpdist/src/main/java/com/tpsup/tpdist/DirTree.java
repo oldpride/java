@@ -11,23 +11,24 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class DirTree {
-	public static HashMap<String, HashMap<String, String>> build_dir_tree(ArrayList<String> paths, HashMap<String, Object> opt) {
+	public static HashMap<String, HashMap<String, String>> build_dir_tree(ArrayList<String> paths,
+			HashMap<String, Object> opt) {
 		String root_dir_pattern = "^[a-zA-Z]:[/]*$|^[/]+$|^[/]+cygdrive[/]+[^/]+[/]*$";
 		Access access = (Access) opt.get("access");
 
 		// note: Java doesn't have chdir() or pwd concept as it is not multi-threading
 		// safe
-		
+
 		String RelativeBase = (String) opt.getOrDefault("RelativeBase", null);
 		Pattern abs_pattern = Pattern.compile("^/|^[a-zA-Z]:");
-		
-		HashMap<String, HashMap<String, String>> tree = new HashMap<String, HashMap<String,String>>();
+
+		HashMap<String, HashMap<String, String>> tree = new HashMap<String, HashMap<String, String>>();
 		for (String path : paths) {
-			path = path.replace("\\", "/");			
-			if (RelativeBase != null && ! abs_pattern.matcher(path).find()) {
+			path = path.replace("\\", "/");
+			if (RelativeBase != null && !abs_pattern.matcher(path).find()) {
 				path = RelativeBase + "/" + path;
 			}
-			
+
 			ArrayList<String> globs = null;
 			globs = FileGlob.get(path, null);
 			if (globs == null) {
@@ -116,9 +117,9 @@ public class DirTree {
 
 	// overload to accept Array
 	public static HashMap<String, HashMap<String, String>> build_dir_tree(String[] paths, HashMap<String, Object> opt) {
-		return build_dir_tree(new ArrayList<String>(Arrays.asList(paths)), opt);		
+		return build_dir_tree(new ArrayList<String>(Arrays.asList(paths)), opt);
 	}
-	
+
 	public static void main(String[] args) {
 		HashMap<String, Object> opt = new HashMap<String, Object>();
 		opt.put("verbose", true);
