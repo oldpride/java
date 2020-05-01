@@ -29,9 +29,12 @@ public class FileWalker {
 		File f = new File(path);
 		HashMap<String, String> kv = new HashMap<String, String>();
 		if (!this.matchExclude.pass(path)) {
-			return;
+			MyLog.append(path + " didn't pass match/exclude patterns");
+			// don't return here as the child files or dirs may still match the pattern. just don't add it to the return tree
+			//return;
+		} else {
+			this.tree.put(relative, kv);
 		}
-		this.tree.put(relative, kv);
 
 		if (!this.access.is_allowed("file", path)) {
 			MyLog.append(path + " not allowed");
