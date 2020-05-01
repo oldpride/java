@@ -88,6 +88,10 @@ public class ToBePulled {
 
 		String[] local_paths = local_paths_string.split("[|]");
 
+		// clone the opt as we want to modify it
+		// https://stackoverflow.com/questions/9252803/how-to-avoid-unchecked-cast-warning-when-cloning-a-hashset
+		opt = new HashMap<String, Object>(opt);
+
 		// excludes and matches are coming from two places
 		// 1. from command line. a single string, multiple patterns are separated by
 		// comma, ",".
@@ -95,9 +99,9 @@ public class ToBePulled {
 		// by newline, "\n"
 		// we need this when build_dir_tree
 		opt.put("matchExclude", new MatchExclude(match_string, exclude_string, "[,\n]"));
-		
+
 		// on be-pulled side, set relative path's base to homedir
-		opt.put("RelativeBase", Env.homedir);
+		opt.put("RelativeBase", Env.homedir.replace("\\", "/"));
 
 		HashMap<String, HashMap<String, String>> local_tree = DirTree.build_dir_tree(local_paths, opt);
 		MyLog.append(MyLog.VERBOSE, "local_tree = " + MyGson.toJson(local_tree));
@@ -117,7 +121,7 @@ public class ToBePulled {
 		ArrayList<String> need_cksums = new ArrayList<String>();
 		// warnings
 		ArrayList<String> warns = new ArrayList<String>();
-		
+
 		if (!check_mode) {
 			warns.add("file mode check is not available");
 		}
@@ -258,7 +262,7 @@ public class ToBePulled {
 				}
 			}
 		}
-	
+
 		String need_cksums_string = "<NEED_CKSUMS>" + String.join("\n", need_cksums) + "</NEED_CKSUMS>";
 		MyLog.append("sending need_chksums request to remote: " + need_cksums.size() + " items");
 		myconn.writeLine(need_cksums_string);
@@ -298,11 +302,11 @@ public class ToBePulled {
 			} else if (!remote_cksum_by_file.get(f).equals(local_cksum_by_file.get(f))) {
 				change_by_file.put(f, "update");
 				diff_by_file.add(f); // only type=file can get here.
-			} else if (! remote_tree.get(f).get("mtime").equals(local_tree.get(f).get("mtime"))) {
+			} else if (!remote_tree.get(f).get("mtime").equals(local_tree.get(f).get("mtime"))) {
 				need_mtime_reset.add(f);
 			}
 		}
-		
+
 		{
 			// when we untar to update a file, the file's parent dir's time stamp is
 			// updated. we need
@@ -319,7 +323,10 @@ public class ToBePulled {
 				Matcher parent_dir_matcher = parent_dir_pattern.matcher(k);
 				if (parent_dir_matcher.find()) {
 					String parent_dir = parent_dir_matcher.group(1);
-					need_mtime_reset.add(parent_dir);
+					if (local_tree.containsKey(parent_dir)) {
+						// local_tree may not have parent_dir as it may be filter out by match/exclude patterns
+						need_mtime_reset.add(parent_dir);
+					}
 				}
 			}
 		}
@@ -333,14 +340,14 @@ public class ToBePulled {
 		MyLog.append("sending adds : " + change_by_file.size() + " items");
 		MyLog.append(MyLog.VERBOSE, "   " + adds_string);
 		myconn.writeLine(adds_string);
-	
+
 		String mtimes_string = StrBlda.build_string(local_tree, "%s %s\n", "MTIMES", "mtime", need_mtime_reset);
 		MyLog.append("sending mtimes : " + need_mtime_reset.size() + " items");
 		MyLog.append(MyLog.VERBOSE, "   " + mtimes_string);
 		myconn.writeLine(mtimes_string);
 
 		String modes_string = StrBlda.build_string(local_tree, "%s %s\n", "MODES", "mode", modes);
-		MyLog.append("sending modes : " + modes.size() + " items");	
+		MyLog.append("sending modes : " + modes.size() + " items");
 		MyLog.append(MyLog.VERBOSE, "   " + modes_string);
 		myconn.writeLine(modes_string);
 
@@ -365,7 +372,7 @@ public class ToBePulled {
 		String mode = captures.get(0).get(0);
 
 		String tmp_tar_file = TmpFile.createTmpFile(Env.tmpBase, Env.projName, opt);
-		
+
 		MyLog.append("received remote tranfer mode: " + mode + ". creating local tar file" + tmp_tar_file);
 		if (!mode.equals("data") && !mode.equals("diff")) {
 			String message = "tranfer mode '" + mode + "' is not supported";
@@ -373,19 +380,19 @@ public class ToBePulled {
 			myconn.writeLine(message);
 			return;
 		}
-		
+
 		ArrayList<String> files_to_tar = new ArrayList<String>();
 		if (mode.equals("diff")) {
 			files_to_tar.addAll(diff_by_file);
 		} else {
 			files_to_tar.addAll(change_by_file.keySet());
 		}
-		
+
 		if (files_to_tar.size() == 0) {
 			MyLog.append("no need to send anything to remote");
 			return;
 		}
-		
+
 		HashMap<String, ArrayList<String>> files_by_front = new HashMap<String, ArrayList<String>>();
 		for (String f : files_to_tar) {
 			String front = (String) local_tree.get(f).get("front");
@@ -415,9 +422,9 @@ public class ToBePulled {
 			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
 			return;
 		}
-		
+
 		MyLog.append("sending  tar-format data (mode=" + mode + ") to remote");
-		
+
 		// use blocked io to send data, therefore use java OutputStream
 		int tar_size = 0;
 		try {
@@ -432,14 +439,14 @@ public class ToBePulled {
 				myconn.write(buffer, 0, size);
 				tar_size += size;
 			}
-            myconn.flush();
+			myconn.flush();
 			inputStream.close();
 		} catch (IOException e) {
 			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
 			return;
 		}
 		MyLog.append("sent tar_size=" + tar_size + ". closed remote connection");
-		
+
 		if ((Boolean) opt.getOrDefault("KeepTmpFile", false)) {
 			MyLog.append("tmp file " + tmp_tar_file + " is kept");
 		} else {
