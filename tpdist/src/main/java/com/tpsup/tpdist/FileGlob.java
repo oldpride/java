@@ -82,7 +82,11 @@ public class FileGlob {
 						Path shortPath = Paths.get(shortname);
 						MyLog.append(MyLog.VERBOSE, shortname + " vs " + parts.get(i));
 						if (compiled_patterns[i].matches(shortPath)) {
-							ArrayList<String> new_item = (ArrayList<String>) doing.clone();
+							// https://stackoverflow.com/questions/9252803/how-to-avoid-unchecked-cast-warning-when-cloning-a-hashset
+							// both the following commands will clone a new_item from "doing", the first one
+							// is a little bit faster but will cause a warning: unchecked cast.
+							// ArrayList<String> new_item = (ArrayList<String>) doing.clone();
+							ArrayList<String> new_item = new ArrayList<String>(doing);
 							new_item.add(shortname);
 							if (new_item.size() == full_length) {
 								results.add(String.join("/", new_item));
@@ -131,6 +135,15 @@ public class FileGlob {
 	}
 
 	public static void main(String[] args) {
+		MyLog.append("test cloning arrayList by creatation");
+		ArrayList<Integer> a = new ArrayList<Integer>();
+		a.add(1);
+		a.add(2);
+		ArrayList<Integer> b = new ArrayList<Integer>(a);
+		b.add(3);
+		MyLog.append("a = " + MyGson.toJson(a));
+		MyLog.append("b = " + MyGson.toJson(b));
+
 		if (args.length != 1)
 			usage();
 		String pattern = args[0];

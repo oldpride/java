@@ -180,6 +180,8 @@ public class Gui extends JPanel implements ActionListener {
 		map.put("remote_paths", pullRemotePathsText.getText().split("[|]"));
 		map.put("local_dir", pullLocalDirText.getText());
 
+		MyLog.append(MyLog.VERBOSE, "pull_params = " + MyGson.toJson(map));
+		
 		return map;
 	}
 
@@ -190,6 +192,9 @@ public class Gui extends JPanel implements ActionListener {
 		opt.put("encode", keyText.getText());
 		opt.put("matches", matchesText.getText());
 		opt.put("excludes", excludesText.getText());
+		
+		
+		MyLog.append(MyLog.VERBOSE, "opt = " + MyGson.toJson(opt));
 
 		return opt;
 	}
@@ -212,6 +217,8 @@ public class Gui extends JPanel implements ActionListener {
 
 		map.put("host", host);
 		map.put("port", port);
+		
+		MyLog.append(MyLog.VERBOSE, "client_params = " + MyGson.toJson(map));
 
 		return map;
 	}
@@ -233,6 +240,8 @@ public class Gui extends JPanel implements ActionListener {
 		}
 
 		map.put("port", serverPort);
+		
+		MyLog.append(MyLog.VERBOSE, "server_params = " + MyGson.toJson(map));
 
 		return map;
 	}
