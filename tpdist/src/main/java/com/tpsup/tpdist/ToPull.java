@@ -71,6 +71,11 @@ public class ToPull {
 		// we will need this when build_dir_tree
 		String matches_str = (String) opt.getOrDefault("matches", "");
 		String excludes_str = (String) opt.getOrDefault("excludes", "");
+		
+		// clone the opt as we want to modify it
+		// https://stackoverflow.com/questions/9252803/how-to-avoid-unchecked-cast-warning-when-cloning-a-hashset
+		opt = new HashMap<String, Object>(opt);
+		
 		opt.put("matchExclude", new MatchExclude(matches_str, excludes_str, "[,\n]"));
 
 		MyLog.append("building local tree using abs_path: " + local_paths.toString());
