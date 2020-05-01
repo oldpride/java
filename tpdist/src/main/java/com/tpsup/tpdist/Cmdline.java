@@ -48,7 +48,7 @@ public class Cmdline {
 		System.exit(1);
 	}
 
-	public static Options setOptions() {
+	public static Options set_options() {
 		// https://commons.apache.org/proper/commons-cli/usage.html
 		Options options = new Options();
 
@@ -82,13 +82,8 @@ public class Cmdline {
 
 		return options;
 	}
-
-	public static void main(String[] args) {
-		// MyLog.verbose = true;
-		// MyLog.append("args = " + MyGson.toJson(args));
-		Options options = setOptions();
-		ArrayList<String> optionList = new ArrayList<String>();
-
+	
+	public static void print_options (Options options) {
 		MyLog.append(MyLog.VERBOSE, "configured options: ");
 
 		for (Option o : options.getOptions()) {
@@ -96,11 +91,14 @@ public class Cmdline {
 			if (oName == null) {
 				oName = o.getOpt();
 			}
-			optionList.add(oName);
-			// MyLog.append(MyGson.toJson(o));
+
 			MyLog.append(MyLog.VERBOSE,
 					"   name = " + o.getOpt() + " " + o.getLongOpt() + " " + o.getType().toString() + " " + o.hasArg());
 		}
+	}
+
+	public static void main(String[] args) {
+		Options options = set_options();
 
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = null;
@@ -109,6 +107,11 @@ public class Cmdline {
 			cmd = parser.parse(options, args);
 		} catch (ParseException e) {
 			usage("parse error: " + e.getMessage(), options);
+		}
+		
+		if (cmd.hasOption("verbose")) {
+			Env.verbose = true;
+			print_options(options);
 		}
 
 		HashMap<String, Object> opt = new HashMap<String, Object>();
