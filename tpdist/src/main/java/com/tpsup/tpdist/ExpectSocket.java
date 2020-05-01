@@ -40,26 +40,28 @@ public class ExpectSocket {
 			// compile patterns
 			Pattern compiled_pattern = Pattern.compile(pattern, Pattern.DOTALL);
 			compiled_patterns.add(compiled_pattern);
-			 // initialize captures array
+			// initialize captures array
 			captures.add(new ArrayList<String>());
 		}
 
 		try {
 			while (true) {
-				String new_data = this.myconn.NioReadString(); //non-blocking IO, need to use sleep to throttle
+				String new_data = this.myconn.NioReadString(); // non-blocking IO, need to use sleep to throttle
 				if (new_data == null) {
 					error_message = "remote side closed socket";
 					break;
 				} else if (new_data.isEmpty()) {
 					// no new data
+					int sleep = 2;
 					if (total_wait > ExpectTimeout) {
 						error_message = "timed out after " + ExpectTimeout
-								+ " seconds. very likely wrong protocol. expecting " + Env.expected_peer_protocol + ".*";
+								+ " seconds. very likely wrong protocol. expecting " + Env.expected_peer_protocol
+								+ ".*";
 						myconn.writeLine(error_message);
 						break;
 					}
-					Thread.sleep(1000); // 1000 milliseconds is one second.
-					total_wait++;
+					Thread.sleep(sleep*1000); // 1000 milliseconds is one second.
+					total_wait += sleep;
 					continue;
 				}
 
@@ -95,6 +97,9 @@ public class ExpectSocket {
 					MyLog.append("received complete information from remote");
 					return captures;
 				}
+				// add a little throttle, a second, to reduce the number of loops.
+				// this makes the log looks nicer
+				Thread.sleep(1000);
 			}
 		} catch (Exception e) {
 			error_message = ExceptionUtils.getStackTrace(e);
