@@ -189,10 +189,14 @@ public class Gui extends JPanel implements ActionListener {
 		HashMap<String, Object> opt = new HashMap<String, Object>();
 
 		opt.put("verbose", verboseModeRadio.isSelected());
+		// set verbose mode as early as possible
+		if (verboseModeRadio.isSelected()) {
+			Env.verbose = true;
+		}
+		
 		opt.put("encode", keyText.getText());
 		opt.put("matches", matchesText.getText());
 		opt.put("excludes", excludesText.getText());
-		
 		
 		MyLog.append(MyLog.VERBOSE, "opt = " + MyGson.toJson(opt));
 
