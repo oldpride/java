@@ -32,6 +32,8 @@ public class Gui extends JPanel implements ActionListener {
 	JTextField keyText;
 	// verbose
 	JRadioButton verboseModeRadio;
+	// interrupt
+	JButton interruptButton;
 
 	public final String threadNamePrefix = Env.projName + "-" + "thread-";
 	public final Pattern threadPattern = Pattern.compile(threadNamePrefix);
@@ -106,6 +108,10 @@ public class Gui extends JPanel implements ActionListener {
 		keyText.setText("");
 		verboseModeRadio = new JRadioButton("Verbose mode");
 		verboseModeRadio.addActionListener(this);
+		
+		// interrupt
+		interruptButton = new JButton("Interrupt");
+		interruptButton.addActionListener(this);
 
 		// For layout purposes, put the buttons in a separate panel
 		JPanel panel = new JPanel(new GridBagLayout());
@@ -168,10 +174,13 @@ public class Gui extends JPanel implements ActionListener {
 		panel.add(keyText, gbc(row, 1, 1, true));
 		row++;
 		panel.add(verboseModeRadio, gbc(row, 0, 1, false));
+		row++;
+		panel.add(interruptButton, gbc(row, 0, 1, false));
 
 		// Add the buttons and the log to this panel,
 		add(panel, BorderLayout.PAGE_START);
 		add(logScrollPane, BorderLayout.CENTER);
+		
 	}
 
 	public HashMap<String, Object> get_pull_params() {
@@ -360,6 +369,12 @@ public class Gui extends JPanel implements ActionListener {
 			serverModeRadio.setSelected(false);
 		} else if (eSource == serverModeRadio) {
 			clientModeRadio.setSelected(false);
+		} else if (eSource == interruptButton) {
+			for (Thread t : Thread.getAllStackTraces().keySet()) {
+				if (threadPattern.matcher(t.getName()).find()) {
+					t.interrupt();
+				}
+			}
 		}
 	}
 
