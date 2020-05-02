@@ -24,7 +24,7 @@ public final class Env {
 		} else {
 			// /var/tmp, /tmp, these are shared among users
 			String username = System.getProperty("user.name");
-			tmpBase = System.getProperty("java.io.tmpdir") + "tmp_" + username;
+			tmpBase = System.getProperty("java.io.tmpdir") + "/tmp_" + username;
 		}
 	}
 

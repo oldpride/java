@@ -372,8 +372,13 @@ public class ToBePulled {
 		String mode = captures.get(0).get(0);
 
 		String tmp_tar_file = TmpFile.createTmpFile(Env.tmpBase, Env.projName, opt);
+		
+		if (tmp_tar_file == null) {
+			MyLog.append(MyLog.ERROR, "cannot create tmp file under " + Env.tmpBase);
+			return;
+		}
 
-		MyLog.append("received remote tranfer mode: " + mode + ". creating local tar file" + tmp_tar_file);
+		MyLog.append("received remote tranfer mode: " + mode + ". creating local tar file " + tmp_tar_file);
 		if (!mode.equals("data") && !mode.equals("diff")) {
 			String message = "tranfer mode '" + mode + "' is not supported";
 			MyLog.append(message);
@@ -419,7 +424,7 @@ public class ToBePulled {
 				tarArchiveOutputStream.close();
 			}
 		} catch (IOException e) {
-			MyLog.append(MyLog.ERROR, ExceptionUtils.getRootCauseMessage(e));
+			MyLog.append(MyLog.ERROR, ExceptionUtils.getStackTrace(e));
 			return;
 		}
 
