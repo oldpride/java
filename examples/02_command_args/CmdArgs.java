@@ -2,9 +2,15 @@
 
 public class CmdArgs {
     public static void usage(String msg) {
+        // https://stackoverflow.com/questions/41894/
+        // to $0
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        StackTraceElement main = stack[stack.length - 1];
+        String mainClass = main.getClassName();
+
         System.err.println(msg);
-        System.err.println("Usage: java CmdArgs [-verbose] [-xn] [-count int] [-output afile] filename");
-        System.err.println("example: java CmdArgs -verbose -xn -count 123 -output out_file pos_file");
+        System.err.println("Usage: java " + mainClass + " [-verbose] [-xn] [-count int] [-output afile] filename");
+        System.err.println("example: java " + mainClass + "-verbose -xn -count 123 -output out_file pos_file");
         System.exit(1);
     }
 
