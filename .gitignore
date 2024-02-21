@@ -1,0 +1,37 @@
+*~
+
+# vi has upto 3 temp files
+*.swp
+*.swo
+*.swn
+
+.nfs*
+
+*.pyc
+.idea
+autopath
+tpstamp.txt*
+
+# password file for python-dotenv
+.env
+
+# perl performance profile
+nytprof.out
+nytprof
+
+# Visual Studio Code
+.vscode/**/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+
+__pycache__
+
+# java and vscode 
+.DS_Store
+target/
+bin/
+*.class
+

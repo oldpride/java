@@ -1,0 +1,161 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "tian.example.App",
+            "projectName": "maven_opencsv"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "App",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.myprog.Main",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "Cksum",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Cksum",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Cmdline",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Cmdline",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Diff",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Diff",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "DirTree",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.DirTree",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Env",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Env",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "FileGlob",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.FileGlob",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "FileWalker",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.FileWalker",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Gui",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Gui",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "MyCoder",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.MyCoder",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "StrBlda",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.StrBlda",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Tar",
+            "request": "launch",
+            "mainClass": "com.tpsup.tpdist.Tar",
+            "projectName": "fileCopy"
+        },
+        {
+            "type": "java",
+            "name": "Jmxcmd",
+            "request": "launch",
+            "mainClass": "com.tpsup.jmxcmd.Jmxcmd",
+            "projectName": "jmxcmd"
+        },
+        {
+            "type": "java",
+            "name": "Config",
+            "request": "launch",
+            "mainClass": "com.tpsup.queryLotsExecId.Config",
+            "projectName": "queryLotsExecId"
+        },
+        {
+            "type": "java",
+            "name": "Csv",
+            "request": "launch",
+            "mainClass": "com.tpsup.queryLotsExecId.Csv",
+            "projectName": "queryLotsExecId"
+        },
+        {
+            "type": "java",
+            "name": "DbQuery",
+            "request": "launch",
+            "mainClass": "com.tpsup.queryLotsExecId.DbQuery",
+            "projectName": "queryLotsExecId"
+        },
+        {
+            "type": "java",
+            "name": "MainGui",
+            "request": "launch",
+            "mainClass": "com.tpsup.queryLotsExecId.MainGui",
+            "projectName": "queryLotsExecId"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "tiancom.testjava2.App",
+            "projectName": "testjava2"
+        },
+        {
+            "type": "java",
+            "name": "FirstClass",
+            "request": "launch",
+            "mainClass": "tiancom.testjava2.FirstClass",
+            "projectName": "testjava2"
+        }
+    ]
+}
