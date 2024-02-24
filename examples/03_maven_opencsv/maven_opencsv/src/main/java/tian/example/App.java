@@ -10,7 +10,9 @@ public class App
         String[] nextLine;
         while ((nextLine = reader.readNext()) != null) {
             // nextLine[] is an array of values from the line
-            System.out.println(nextLine[0] + nextLine[1] + "etc...");
+            // join the array with a comma
+            System.out.println(String.join(",", nextLine));
+            
         }
     }
 }
