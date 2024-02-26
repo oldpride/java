@@ -3,20 +3,19 @@ package tian.example;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * Unit test for simple App.
  */
 public class AppTest 
 {
-    /**
-     * Rigorous Test :-)
-     */
-    // @Test
-    // public void shouldAnswerWithTrue()
-    // {
-    //     assertTrue(true);
-    // }
+    @Disabled // disable this test
+    @Test
+    public void shouldAnswerWithTrue()
+    {
+        assertTrue(true);
+    }
     
     @Test
     public void testApp() {
